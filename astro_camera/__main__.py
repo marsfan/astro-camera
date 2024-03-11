@@ -20,7 +20,7 @@ request: CompletedRequest  =picam2.switch_mode_and_capture_request(camera_config
 
 request.save("main", "image.jpg")
 request.save_dng("image.dng")
-with open("metadata.json", "w") as file:
+with open("image.metadata.json", "w") as file:
     json.dump(request.get_metadata(), file)
 request.release()
 

@@ -1,3 +1,4 @@
-.mypy_cache
+*.jpg
+*.dng
+*.metadata.json
 __pycache__/
-typings
