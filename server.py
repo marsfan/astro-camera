@@ -8,16 +8,13 @@ import socketserver
 from http import server
 from threading import Condition
 from urllib.parse import urlparse, parse_qs
-import cv2
 
 
-# from picamera2 import Picamera2
-# from picamera2.encoders import MJPEGEncoder
-# from picamera2.outputs import FileOutput
+from picamera2 import Picamera2
+from picamera2.encoders import MJPEGEncoder
+from picamera2.outputs import FileOutput
 
-cam = cv2.VideoCapture(0)
-result, image = cam.read()
-print(result)
+
 
 
 class StreamingOutput(io.BufferedIOBase):
@@ -89,10 +86,9 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             try:
                 while True:
                     # FIXME: Replace with camera stream
-                    # with output.condition:
-                    #     output.condition.wait()
-                    #     frame = output.frame
-                    _, frame = cam.read()
+                    with output.condition:
+                        output.condition.wait()
+                        frame = output.frame
                     self.wfile.write(b'--FRAME\r\n')
                     self.send_header('Content-Type', 'image/jpeg')
                     self.send_header('Content-Length', len(frame))
@@ -102,7 +98,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     self.send_header('Content-Type', 'text/plain')
                     self.send_header('Content-Length', 13)
                     self.end_headers()
-                self.wfile.write(b"\r\n")
+                    self.wfile.write(b"\r\n")
             except Exception as e:
                 logging.warning(
                     'Removed streaming client %s: %s',
@@ -117,10 +113,10 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     daemon_threads = True
 
 
-# picam2 = Picamera2()
-# picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
-# output = StreamingOutput()
-# picam2.start_recording(MJPEGEncoder(), FileOutput(output))
+picam2 = Picamera2()
+picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
+output = StreamingOutput()
+picam2.start_recording(MJPEGEncoder(), FileOutput(output))
 
 try:
     address = ('', 8000)
