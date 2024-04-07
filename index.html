@@ -1,0 +1,24 @@
+<html>
+
+<head>
+    <title>picamera2 MJPEG streaming demo</title>
+</head>
+
+<body>
+    <h1>Picamera2 MJPEG Streaming Demo</h1>
+    <!-- <img src="stream.mjpg" width="640" height="480" /> -->
+</body>
+
+<form method="GET" action="/take">
+    <input type="submit" value="Take Photo" />
+</form>
+<form method="GET" action="/exposure">
+    <input type="text" id="exval" name="exval" placeholder="Exposure" value="" />
+    <input type="submit" value="Set Exposure Time" />
+</form>
+<form method="GET" action="/gain">
+    <input type="text" id="gainval" name="gainval" placeholder="Gain" value="" />
+    <input type="submit" value="Set Gain" />
+</form>
+
+</html>
