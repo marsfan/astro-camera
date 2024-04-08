@@ -20,7 +20,7 @@ from picamera2.outputs import FileOutput
 from picamera2.request import CompletedRequest
 
 
-cam_controls = {"AeEnable": True}
+cam_controls = {"AeEnable": True, "ExposureValue": 0.0}
 picam2 = Picamera2()
 
 preview_config = picam2.create_video_configuration(main={"size": (640, 480)}, controls=cam_controls)
@@ -103,6 +103,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             content = Page(file.read())
         content.replace_tag("gain", str(cam_metadata["AnalogueGain"]))
         content.replace_tag("exposure", str(cam_metadata["ExposureTime"]))
+        content.replace_tag("currentEv", str(cam_controls["ExposureValue"]))
 
         if cam_controls["AeEnable"] == True:
             content.replace_tag("autoEx", "checked=\"\"")
@@ -126,6 +127,8 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             modified_controls["AeEnable"] = True
         else:
             modified_controls["AeEnable"] = False
+        if "ev" in requested:
+            modified_controls["ExposureValue"] = float(requested["ev"][0])
         cam_controls = modified_controls
         picam2.set_controls(modified_controls)
 
@@ -133,19 +136,25 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         # Copy over metadata from preview mode that we want.
         controls = {}
         md = picam2.capture_metadata()
-        controls["ExposureTime"] = (md["ExposureTime"])
-        controls["AnalogueGain"] = (md["AnalogueGain"])
+        controls["ExposureTime"] = md["ExposureTime"]
+        controls["AnalogueGain"] = md["AnalogueGain"]
+        controls["AeEnable"] = cam_controls["AeEnable"]
+        controls["ExposureValue"] = cam_controls["ExposureValue"]
+
+        print(controls)
         # Create config for high res photo
         capture_config = picam2.create_still_configuration(raw={}, display=None, controls=controls)
 
         # Stop the encoder to prevent crashes
+        # See https://forums.raspberrypi.com/viewtopic.php?t=354226
         picam2.stop_encoder()
 
         # Take the photo
         request: CompletedRequest = picam2.switch_mode_and_capture_request(capture_config)
+        print(picam2.camera_controls["AnalogueGain"])
+
         # FIXME: Filename by datestamp
         # filename = f"IMG_{datetime.isoformat(datetime.now())}"
-        print(picam2.capture_metadata())
 
         # Save image as JPG, DNG, and the metadata
         filename="image"
@@ -169,6 +178,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Process HTTP GET request."""
+        global cam_controls
         if self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
@@ -188,6 +198,9 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             print(controls)
             print(cam_metadata)
             self.send_index_redir()
+        elif self.path.startswith("/reset"):
+            self.send_index_redir()
+            cam_controls = {"AeEnable": True, "ExposureValue": 0.0}
         elif self.path == '/index.html':
             self.send_index()
         elif self.path == "/favicon.ico":
@@ -205,7 +218,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             try:
                 while True:
-                    # FIXME: Replace with camera stream
                     with output.condition:
                         output.condition.wait()
                         frame = output.frame
