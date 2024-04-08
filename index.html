@@ -1,24 +1,31 @@
 <html>
 
 <head>
-    <title>picamera2 MJPEG streaming demo</title>
+    <title>Astrocamera</title>
 </head>
 
 <body>
-    <h1>Picamera2 MJPEG Streaming Demo</h1>
     <img src="stream.mjpg" width="640" height="480" />
-</body>
 
-<form method="GET" action="/take">
-    <input type="submit" value="Take Photo" />
-</form>
-<form method="GET" action="/exposure">
-    <input type="text" id="exval" name="exval" placeholder="Exposure" value="" />
-    <input type="submit" value="Set Exposure Time" />
-</form>
-<form method="GET" action="/gain">
-    <input type="text" id="gainval" name="gainval" placeholder="Gain" value="" />
-    <input type="submit" value="Set Gain" />
-</form>
+    <form method="GET" action="/take">
+        <input type="submit" value="Take Photo" />
+    </form>
+    <h2>Exposure Control </h2>
+    <form method="GET" action="/exposure">
+        <input type="checkbox" name="autoex" id="autoex" {{autoEx}} />
+        <label for="autoex">Auto Exposure</label>
+        <br />
+        <input type="text" id="exval" name="exval" placeholder="{{exposure}}" value="" />
+        <label for="exval">Exposure</label>
+        <br>
+        <input type="text" id="gainval" name="gainval" placeholder="{{gain}}" value="" />
+        <label for="gainval">Gain</label>
+        <br>
+        <input type="submit" value="Set Options" />
+    </form>
+    <form method="GET" action="/debug">
+        <input type="submit" value="Dump Stuff" />
+    </form>
+</body>
 
 </html>
