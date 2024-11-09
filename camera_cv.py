@@ -3,6 +3,8 @@
 """Module for manipulating camera via OpenCV."""
 import cv2
 
+from camera_base import CameraBase
+
 # TODO: Abstract base class for this and picamera
 
 # TODO: Context manager suppot
@@ -10,7 +12,7 @@ import cv2
 # TODO: Metdata suport, exposure support
 
 
-class Camera:
+class Camera(CameraBase):
     """Class for manipulating camera via OpenCV."""
 
     def __init__(self) -> None:

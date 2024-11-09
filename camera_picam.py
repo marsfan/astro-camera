@@ -9,6 +9,8 @@ from picamera2.request import CompletedRequest
 from threading import Condition
 from io import BytesIO
 
+from camera_base import CameraBase
+
 
 class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
@@ -21,7 +23,7 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 
-class Camera:
+class Camera(CameraBase):
     """Class for manipulating camera via PiCamera2."""
 
     def __init__(self) -> None:
