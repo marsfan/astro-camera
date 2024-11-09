@@ -1,31 +1,24 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
+"""Web server for the camera system."""
 
-# This is the same as mjpeg_server.py, but uses the h/w MJPEG encoder.
-
-import io
 import logging
 import socketserver
 from http import server
-from threading import Condition
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 import json
 from typing import Any
 from socket import socket
+from pathlib import Path
 
+try:
+    from camera_picam import Camera
+except ImportError:
+    from camera_cv import Camera
 
-from picamera2 import Picamera2
-from picamera2.encoders import MJPEGEncoder
-from picamera2.outputs import FileOutput
-from picamera2.request import CompletedRequest
+camera = Camera()
 
-
-cam_controls = {"AeEnable": True, "ExposureValue": 0.0}
-picam2 = Picamera2()
-
-preview_config = picam2.create_video_configuration(main={"size": (640, 480)}, controls=cam_controls)
-
-picam2.configure(preview_config)
 
 class Page:
     """Custom string with additional useful methods."""
@@ -64,16 +57,6 @@ class Page:
     def __len__(self) -> int:
         return len(self.value)
 
-class StreamingOutput(io.BufferedIOBase):
-    def __init__(self):
-        self.frame = None
-        self.condition = Condition()
-
-    def write(self, buf):
-        with self.condition:
-            self.frame = buf
-            self.condition.notify_all()
-
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
 
@@ -97,15 +80,19 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 
     def send_index(self) -> None:
         """Send the index.html page."""
-        cam_metadata = picam2.capture_metadata()
+
+        cam_metadata = camera.get_metadata()
 
         with open("index.html", "rb") as file:
             content = Page(file.read())
         content.replace_tag("gain", str(cam_metadata["AnalogueGain"]))
         content.replace_tag("exposure", str(cam_metadata["ExposureTime"]))
-        content.replace_tag("currentEv", str(cam_controls["ExposureValue"]))
+        content.replace_tag(
+            "currentEv",
+            str(camera.get_controls()["ExposureValue"])
+        )
 
-        if cam_controls["AeEnable"] == True:
+        if camera.get_controls()["AeEnable"] == True:
             content.replace_tag("autoEx", "checked=\"\"")
         else:
             content.replace_tag("autoEx", "")
@@ -115,9 +102,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(bytes(content))
 
-
     def set_camera_props(self, requested: dict[str, str]) -> None:
-        global cam_controls
         modified_controls: dict[str, Any] = {}
         if "exval" in requested:
             modified_controls["ExposureTime"] = float(requested["exval"][0])
@@ -129,56 +114,21 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             modified_controls["AeEnable"] = False
         if "ev" in requested:
             modified_controls["ExposureValue"] = float(requested["ev"][0])
-        cam_controls = modified_controls
-        picam2.set_controls(modified_controls)
+        camera.set_controls(modified_controls)
 
     def take_photo(self) -> None:
-        # Copy over metadata from preview mode that we want.
-        controls = {}
-        md = picam2.capture_metadata()
-        controls["ExposureTime"] = md["ExposureTime"]
-        controls["AnalogueGain"] = md["AnalogueGain"]
-        controls["AeEnable"] = cam_controls["AeEnable"]
-        controls["ExposureValue"] = cam_controls["ExposureValue"]
+        """Take a high-resolution photo."""
 
-        print(controls)
-        # Create config for high res photo
-        capture_config = picam2.create_still_configuration(raw={}, display=None, controls=controls)
+        camera_data, jpg_photo, dng_photo = camera.take_photo()
 
-        # Stop the encoder to prevent crashes
-        # See https://forums.raspberrypi.com/viewtopic.php?t=354226
-        picam2.stop_encoder()
-
-        # Take the photo
-        request: CompletedRequest = picam2.switch_mode_and_capture_request(capture_config)
-        print(picam2.camera_controls["AnalogueGain"])
-
-        # FIXME: Filename by datestamp
-        # filename = f"IMG_{datetime.isoformat(datetime.now())}"
-
-        # Save image as JPG, DNG, and the metadata
-        filename="image"
-        request.save("main", f"{filename}.jpg")
-        request.save_dng(f"{filename}.dng")
-        with open(f"{filename}.json", "w") as file:
-            print(request.config)
-            data = {
-                "metadata": request.get_metadata(),
-                # "config": request.config, # FIXME: Get this working
-                "camera_properties": picam2.camera_properties
-            }
-            json.dump(data, file, indent=4)
-
-        # Release the request
-        request.release()
-
-        # Restart MJPEG encoder
-        picam2.start_encoder(MJPEGEncoder(), FileOutput(output))
-
+        filename = f"IMG_{datetime.isoformat(datetime.now())}".replace(":", "_")  # noqa
+        Path(f"{filename}.jpg").write_bytes(jpg_photo)
+        Path(f"{filename}.dng").write_bytes(dng_photo)
+        with Path(f"{filename}.json").open("w", encoding="UTF-8") as file:
+            json.dump(camera_data, file, indent=4)
 
     def do_GET(self):
         """Process HTTP GET request."""
-        global cam_controls
         if self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
@@ -187,20 +137,17 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_index_redir()
             self.take_photo()
 
-
         elif self.path.startswith("/exposure?"):
             self.send_index_redir()
             args = self.parse_opts()
             self.set_camera_props(args)
         elif self.path.startswith("/debug"):
-            cam_metadata = picam2.capture_metadata()
-            controls = picam2.camera_controls
-            print(controls)
-            print(cam_metadata)
+            print(camera.get_controls())
+            print(camera.get_metadata())
             self.send_index_redir()
         elif self.path.startswith("/reset"):
             self.send_index_redir()
-            cam_controls = {"AeEnable": True, "ExposureValue": 0.0}
+            camera.set_controls({"AeEnable": True, "ExposureValue": 0.0})
         elif self.path == '/index.html':
             self.send_index()
         elif self.path == "/favicon.ico":
@@ -218,9 +165,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             try:
                 while True:
-                    with output.condition:
-                        output.condition.wait()
-                        frame = output.frame
+                    frame = camera.get_frame()
                     self.wfile.write(b'--FRAME\r\n')
                     self.send_header('Content-Type', 'image/jpeg')
                     self.send_header('Content-Length', len(frame))
@@ -245,12 +190,9 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     daemon_threads = True
 
 
-output = StreamingOutput()
-picam2.start_recording(MJPEGEncoder(), FileOutput(output))
-
 try:
     address = ('', 8000)
-    server = StreamingServer(address, StreamingHandler)
-    server.serve_forever()
+    page_server = StreamingServer(address, StreamingHandler)
+    page_server.serve_forever()
 finally:
-    picam2.stop_recording()
+    camera.close()
