@@ -135,7 +135,7 @@ class Server:
             once=True
         )
 
-    def set_camera_props(self) -> None:
+    async def set_camera_props(self) -> None:
         """Set the camera configuration properties."""
         modified_controls: dict[str, Any] = {}
 
@@ -151,7 +151,7 @@ class Server:
 
         self._camera.set_controls(modified_controls)
 
-    def reset_camera_props(self) -> None:
+    async def reset_camera_props(self) -> None:
         """Reset camera configuration properties."""
         self.ev = 0
         self.ae_enable = True
@@ -162,7 +162,7 @@ class Server:
             }
         )
 
-    def debug(self) -> None:
+    async def debug(self) -> None:
         """Print camera information to console."""
         print(self._camera.get_controls())
         print(self._camera.get_metadata())
