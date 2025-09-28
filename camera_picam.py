@@ -53,6 +53,8 @@ class Camera(CameraBase):
             Single frame for display.
 
         """
+        # TODO: Ensure we are using hw encoder
+        # https://github.com/raspberrypi/picamera2/issues/752
         with self._output.condition:
             self._output.condition.wait()
             return self._output.frame

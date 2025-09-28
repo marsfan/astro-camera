@@ -5,6 +5,7 @@
 import logging
 import socketserver
 from http import server
+from time import sleep
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 import json
@@ -12,10 +13,15 @@ from typing import Any
 from socket import socket
 from pathlib import Path
 
-try:
-    from camera_picam import Camera
-except ImportError:
-    from camera_cv import Camera
+DUMMY_CAMERA = True
+
+if DUMMY_CAMERA:
+    from camera_dummy import Camera
+else:
+    try:
+        from camera_picam import Camera
+    except ImportError:
+        from camera_cv import Camera
 
 camera = Camera()
 
@@ -176,6 +182,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     self.send_header('Content-Length', 13)
                     self.end_headers()
                     self.wfile.write(b"\r\n")
+                    sleep(0.1)
             except Exception as e:
                 logging.warning(
                     'Removed streaming client %s: %s',
