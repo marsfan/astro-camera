@@ -7,6 +7,7 @@
 import signal
 import time
 from types import FrameType
+from typing import Any
 
 import fastapi
 import nicegui
@@ -42,8 +43,15 @@ class Server:
             # frame = b"00"
             return fastapi.Response(content=frame, media_type="image/jpeg")
 
+        nicegui.ui.page_title("Astro Camera Control")
+
         # For non-flickering image updates and automatic bandwidth adaptation an interactive image is much better than `ui.image()`.
         video_image = nicegui.ui.interactive_image()  # .classes("w-full h-full")
+
+        self.ev = 0.0
+        self.exposure = 0.0125  # 1/8 second
+        self.gain = 1.0
+        self.ae_enable = True
 
         # Timer to constantly update image source
         # We are appending current timestamp to the source to force browser caching to update
@@ -59,38 +67,43 @@ class Server:
         nicegui.ui.label("Exposure Control").style(
             "font-size: 20px; font-weight: bold"
         )
-        ae_switch = nicegui.ui.switch("Auto Exposure")
-        nicegui.ui.number(label="Exposure").bind_enabled_from(
-            ae_switch,
+        self.ae_switch = nicegui.ui.switch(
+            "Auto Exposure").bind_value(self, "ae_enable")
+        self.exposure_entry = nicegui.ui.number(label="Exposure").bind_enabled_from(
+            self.ae_switch,
             "value",
             # Inverts the switch value, so when switch is on, we disable widget
             backward=lambda value: not value
-        )
-        nicegui.ui.number(label="Gain").bind_enabled_from(ae_switch).bind_enabled_from(
-            ae_switch,
+        ).bind_value(self, "exposure")
+        self.gain_entry = nicegui.ui.number(label="Gain").bind_enabled_from(
+            self.ae_switch,
             "value",
             # Inverts the switch value, so when switch is on, we disable widget
             backward=lambda value: not value
-        )
+        ).bind_value(self, "gain")
         with nicegui.ui.row().classes('w-full no-wrap'):
-            slider = nicegui.ui.slider(
+            self.ev_slider = nicegui.ui.slider(
                 min=-8,
                 max=8,
                 step=0.1,
                 value=0
-            ).style("max-width: 180px").bind_enabled_from(
-                ae_switch,
-                "value",
-                # Inverts the switch value, so when switch is on, we disable widget
-                backward=lambda value: not value
-            )
-            nicegui.ui.label().bind_text_from(slider, "value")
+            ).style("max-width: 180px").bind_value(self, "ev")
+            nicegui.ui.label().bind_text_from(self, "ev")
             nicegui.ui.label("EV")
 
         with nicegui.ui.row():
-            nicegui.ui.button("Set Options")
-            nicegui.ui.button("Reset Options")
-        nicegui.ui.button("Dump Stuff")
+            nicegui.ui.button(
+                "Set Options",
+                on_click=self.set_camera_props
+            )
+            nicegui.ui.button(
+                "Reset Options",
+                on_click=self.reset_camera_props
+            )
+        nicegui.ui.button(
+            "Dump Stuff",
+            on_click=self.debug
+        )
 
         nicegui.app.on_shutdown(self.cleanup)
         # We also need to disconnect clients when the app is stopped with Ctrl+C,
@@ -122,8 +135,39 @@ class Server:
             once=True
         )
 
+    def set_camera_props(self) -> None:
+        """Set the camera configuration properties."""
+        modified_controls: dict[str, Any] = {}
+
+        if not self.ae_switch.value:
+
+            modified_controls["ExposureTime"] = self.exposure_entry.value
+            modified_controls["AnalogueGain"] = self.gain_entry.value
+            modified_controls["ExposureValue"] = self.ev
+            modified_controls["AeEnable"] = False
+        else:
+            modified_controls["ExposureValue"] = self.ev
+            modified_controls["AeEnable"] = True
+
+        self._camera.set_controls(modified_controls)
+
+    def reset_camera_props(self) -> None:
+        """Reset camera configuration properties."""
+        self.ev = 0
+        self.ae_enable = True
+        self._camera.set_controls(
+            {
+                "AeEnable": self.ae_enable,
+                "ExposureValue": self.ev
+            }
+        )
+
+    def debug(self) -> None:
+        """Print camera information to console."""
+        print(self._camera.get_controls())
+        print(self._camera.get_metadata())
+
 
 if __name__ in {"__main__", "__mp_main__"}:
-    # nicegui.app.on_startup(setup)
     Server()
     nicegui.ui.run()
