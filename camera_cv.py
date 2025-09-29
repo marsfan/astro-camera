@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via OpenCV."""
+from typing import Any
 import cv2
 
 from camera_base import CameraBase
@@ -30,7 +31,7 @@ class Camera(CameraBase):
         rc, frame = cv2.imencode(".jpg", img)
         return bytes(frame)
 
-    def take_photo(self) -> tuple[dict, bytes, bytes]:
+    def take_photo(self) -> tuple[dict[str, Any], bytes, bytes]:
         """Take a single high-resolution photo.
 
         Returns:
@@ -45,7 +46,7 @@ class Camera(CameraBase):
         rc, jpg = cv2.imencode(".jpg", img)
         # FIXME: Include image metadata.
 
-        data = {
+        data: dict[str, Any] = {
             "cam_driver": "cv2",
             "metadata": self.get_metadata(),
             # "config": request.config, # FIXME: Get this working
@@ -88,6 +89,70 @@ class Camera(CameraBase):
 
         """
         # TODO: Figure out how to do this for opencv
+
+    def set_exposure_time(self, time: float) -> None:
+        """Set the exposure time.
+
+        Arguments:
+            time: The exposure time to set
+
+        """
+
+    def set_gain(self, gain: float) -> None:
+        """Set sensor gain.
+
+        Arguments:
+            gain: The sensor gain to set.
+
+        """
+
+    def set_ev(self, ev: float) -> None:
+        """Set sensor exposure compensation.
+
+        Arguments:
+            ev: The exposure compensation to set.
+
+        """
+
+    def set_auto_exposure(self, ae: bool) -> None:
+        """Enable/Disable auto-exposure.
+
+        Arguments:
+            ae: Whether or not to enable auto-exposure
+
+        """
+
+    def get_exposure_time(self) -> float:
+        """Get the exposure time.
+
+        Returns:
+            Exposure Time
+
+        """
+
+    def get_gain(self) -> float:
+        """Get sensor gain.
+
+        Returns:
+            Sensor Gain
+
+        """
+
+    def get_ev(self) -> float:
+        """Get sensor exposure compensation.
+
+        Returns:
+            Exposure Compensation
+
+        """
+
+    def get_auto_exposure(self) -> bool:
+        """Get whether or not auto-exposure is enabled.
+
+        Returns:
+            Whether or not auto-exposure is enabled
+
+        """
 
     def close(self) -> None:
         """Shut down camera."""

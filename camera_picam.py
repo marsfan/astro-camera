@@ -140,6 +140,78 @@ class Camera(CameraBase):
         """
         self._cam_controls = controls
 
+    def set_exposure_time(self, time: float) -> None:
+        """Set the exposure time.
+
+        Arguments:
+            time: The exposure time to set
+
+        """
+        self._cam_controls["ExposureTime"] = time
+
+    def set_gain(self, gain: float) -> None:
+        """Set sensor gain.
+
+        Arguments:
+            gain: The sensor gain to set.
+
+        """
+        self._cam_controls["AnalogueGain"] = gain
+
+    def set_ev(self, ev: float) -> None:
+        """Set sensor exposure compensation.
+
+        Arguments:
+            ev: The exposure compensation to set.
+
+        """
+        self._cam_controls["ExposureValue"] = ev
+
+    def set_auto_exposure(self, ae: bool) -> None:
+        """Enable/Disable auto-exposure.
+
+        Arguments:
+            ae: Whether or not to enable auto-exposure
+
+        """
+        self._cam_controls["AeEnable"] = ae
+
+    def get_exposure_time(self) -> float:
+        """Get the exposure time.
+
+        Returns:
+            Exposure Time
+
+        """
+        return self.get_metadata()["ExposureTime"]
+
+    def get_gain(self) -> float:
+        """Get sensor gain.
+
+        Returns:
+            Sensor Gain
+
+        """
+        return self.get_metadata()["AnalogueGain"]
+
+    def get_ev(self) -> float:
+        """Get sensor exposure compensation.
+
+        Returns:
+            Exposure Compensation
+
+        """
+        return self._cam_controls["ExposureValue"]
+
+    def get_auto_exposure(self) -> bool:
+        """Get whether or not auto-exposure is enabled.
+
+        Returns:
+            Whether or not auto-exposure is enabled
+
+        """
+        return self._cam_controls["AeEnable"]
+
     def close(self) -> None:
         """Shut down camera."""
         self._picam2.stop_recording()
