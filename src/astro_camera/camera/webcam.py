@@ -4,7 +4,7 @@
 from typing import Any
 import cv2
 
-from camera_base import CameraBase
+from . import CameraBase
 
 # TODO: Abstract base class for this and picamera
 

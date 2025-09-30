@@ -18,12 +18,12 @@ import nicegui
 DUMMY_CAMERA = True
 
 if DUMMY_CAMERA:
-    from camera_dummy import Camera
+    from astro_camera.camera.dummy import Camera
 else:
     try:
-        from camera_picam import Camera
+        from astro_camera.camera.picam import Camera
     except ImportError:
-        from camera_cv import Camera
+        from astro_camera.camera.webcam import Camera
 
 
 class Server:

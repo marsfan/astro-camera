@@ -9,7 +9,7 @@ from picamera2.request import CompletedRequest
 from threading import Condition
 from io import BytesIO
 
-from camera_base import CameraBase
+from . import CameraBase
 
 
 class StreamingOutput(io.BufferedIOBase):

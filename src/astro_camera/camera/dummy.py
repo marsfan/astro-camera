@@ -6,7 +6,7 @@
 from typing import Any, cast
 import cv2
 
-from camera_base import CameraBase
+from . import CameraBase
 from time import monotonic
 
 
