@@ -1,0 +1,22 @@
+# Copy to /etc/systemd/system
+# Then run sudo systemctl  daemon-reload
+# Then run sudo systemctl  enable astrocam.service
+[Unit]
+Description=Astrocamera
+#Requires=NetworkManager.service
+#After=NetworkManager.service
+
+[Service]
+WorkingDirectory=/home/gabe/astro_camera
+ExecStart=/usr/bin/python3 /home/gabe/astro_camera/server.py
+# ExecReload=/usr/bin/python3 /home/gabe/astro_camera/server.py
+ExecStop=kill $(pidof python3 server.py)
+Type=simple
+Restart=on-failure
+TimeoutStartSec=0
+StartLimitBurst=3
+StartLimitIntervalSec=15
+User=gabe
+
+[Install]
+WantedBy=multi-user.target
