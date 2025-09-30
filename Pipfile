@@ -12,6 +12,7 @@ opencv-python = "*"
 nicegui = "*"
 
 [dev-packages]
+build = "*"
 
 [requires]
 python_version = "3.13"

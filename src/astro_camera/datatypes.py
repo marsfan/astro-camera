@@ -6,6 +6,7 @@ from libcamera import Transform, ColorSpace, controls, Rectangle
 from typing import Any, Literal
 # TODO: Submit typings to Raspi repo
 
+
 class Options(TypedDict):
     """Options for saving images.
 
@@ -19,6 +20,7 @@ class Options(TypedDict):
     compress_level: int
     """PNG Compression level from 0 to 9."""
 
+
 class CameraProperties(TypedDict):
     """Information about the sensor being used.
 
@@ -28,7 +30,6 @@ class CameraProperties(TypedDict):
 
     ColorFilterArrangement: int  # TODO: Enum for translating this.
     """Sensor Bayer Order."""
-
 
     Location: int  # TODO: enum for tranlsating this
     """Location on the device. Unused by Raspberry Pi"""
@@ -137,10 +138,11 @@ class CameraControls(TypedDict):
     AwbMode: controls.AwbModeEnum
     """Set the mode of the AWB algorithm."""
 
-     Brightness: float
+    Brightness: float
     """Adjust image brightness from -1.0 to 1.0."""
 
-    ColourCorrectionMatrix: tuple[float, float, float, float, float, float, float, float, float]
+    ColourCorrectionMatrix: tuple[float, float,
+                                  float, float, float, float, float, float, float]
     """3x3 matrix used by the ISP to convert raw camera colors to sRGB. Read Only."""
 
     ColourGains: tuple[float, float]
@@ -171,7 +173,7 @@ class CameraControls(TypedDict):
 
     """
 
-    ExposureTime: Any # FIXME: Consult camera_controls property
+    ExposureTime: Any  # FIXME: Consult camera_controls property
     """Sensor Exposure time in microseconds."""
 
     ExposureValue: float
@@ -192,12 +194,11 @@ class CameraControls(TypedDict):
 
     """
 
-    FrameDurationLimits: Any # TODO: Consulte the camera_controls property
+    FrameDurationLimits: Any  # TODO: Consulte the camera_controls property
     """Minimum and maximum time (in us) that the sensor can take to deliver a frame."""
 
     HdrChannel: controls.HdrChannelEnum
     """Which HDR Channel the current frame represents. Read Only."""
-
 
     HdrMode: controls.HdrModeEnum
     """Whether to run the camera in HDR mode, and in which mode.
@@ -252,9 +253,9 @@ class CameraControls(TypedDict):
 
     """
 
-
     # FIXME: Finish writing this, see Picameara document
     # FIXME Indicate they might nott be present. Need to check typing docs
+
 
 class SensorMode(TypedDict):
     """Picamera2 sensor mode information."""
@@ -270,17 +271,19 @@ class SensorMode(TypedDict):
     exposure_limits: tuple[int, int]
     """Minimum and maximum allowed exposure time in microseconds."""
 
-    format: str # TODO: Proper reference to sstreamconfig in docstring
+    format: str  # TODO: Proper reference to sstreamconfig in docstring
     """Packed sensor format. Can be passed to raw stream format field."""
 
     fps: float
     """Maximum supported framerate for the mode"""
 
-    size: tuple[int, int] # TODO: Proper reference to sstreamconfig in docstring
+    # TODO: Proper reference to sstreamconfig in docstring
+    size: tuple[int, int]
     """Sensor output resolution. Can be passed to the 'size' parameter for a stream."""
 
     unpacked: str
     """Unpacked Raw format for the mode. Use in place of 'format' of unpacked raws are required."""
+
 
 class StreamConfiguration(TypedDict):
     """Picamera2 stream configuration."""
@@ -294,8 +297,9 @@ class StreamConfiguration(TypedDict):
     stride: int  # FIXME: Indicate this is not user controllable. Need to check typing docs
     """Length of each row in the image in bytes (read only)."""
 
-    framesize: int # FIXME: Indicate this is not user controllable. Need to check typing docs
+    framesize: int  # FIXME: Indicate this is not user controllable. Need to check typing docs
     """Total amount of memory the image will occupy (read only)."""
+
 
 class SensorConfiguration(TypedDict):
     """Picamera 2 sensor configuration."""
@@ -305,6 +309,7 @@ class SensorConfiguration(TypedDict):
 
     bit_depth: int
     """Bit depth of the sensor mode."""
+
 
 class CameraConfiguration(TypedDict):
     """Picamera2 Camera Configuration dictionary."""
@@ -327,10 +332,12 @@ class CameraConfiguration(TypedDict):
     Members should be copied from values in the SensorMode typed dict.
     """
 
-    display: Optional[Literal["main", "lowres", "raw"]]  # FIXME: raw might not be ok
+    # FIXME: raw might not be ok
+    display: Optional[Literal["main", "lowres", "raw"]]
     """Names of the streams to show in preview window."""
 
-    encode: Optional[Literal["main", "lowres", "raw"]] # FIXME: raw might not be ok
+    # FIXME: raw might not be ok
+    encode: Optional[Literal["main", "lowres", "raw"]]
     """Names of the streams to encode if a video encoding is started."""
 
     controls: CameraControls
@@ -342,7 +349,7 @@ class CameraConfiguration(TypedDict):
     main: StreamConfiguration
     """Configuration options for the main image stream."""
 
-    raw: StreamConfiguration # FIXME: Might be optional?
+    raw: StreamConfiguration  # FIXME: Might be optional?
     """Configuration options for the raw image stream."""
 
     use_case: str

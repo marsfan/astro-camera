@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astro_camera"
+description = "Raspberry Pi based astrophotography system."
+readme = "README.md"
+license = "MPL-2.0"
+dynamic = ["version"]
+dependencies = ["nicegui", "opencv-python"]
+requires-python = ">=3.11"
+authors = [
+    { name = "Gabriel Roper", email = "9311953+marsfan@users.noreply.github.com" },
+]
+keywords = ["raspberry-pi", "space", "astrophotography"]
+
+[project.urls]
+Repository = "https://github.com/marsfan/astro_camera"
+Issues = "https://github.com/marsfan/astro_camera/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "astro_camera.__version__"}
+
+[project.scripts]
+astro-camera = "astro_camera.__main__:main"
