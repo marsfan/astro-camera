@@ -45,7 +45,8 @@ class Server:
 
         nicegui.ui.page_title("Astro Camera Control")
 
-        # For non-flickering image updates and automatic bandwidth adaptation an interactive image is much better than `ui.image()`.
+        # For non-flickering image updates and automatic bandwidth
+        # adaptation an interactive image is much better than `ui.image()`.
         video_image = nicegui.ui.interactive_image()  # .classes("w-full h-full")
 
         self.ev = 0.0
@@ -107,7 +108,8 @@ class Server:
 
         nicegui.app.on_shutdown(self.cleanup)
         # We also need to disconnect clients when the app is stopped with Ctrl+C,
-        # because otherwise they will keep requesting images which lead to unfinished subprocesses blocking the shutdown.
+        # because otherwise they will keep requesting images which lead to
+        # unfinished subprocesses blocking the shutdown.
         signal.signal(signal.SIGINT, self.handle_sigint)
 
     async def cleanup(self) -> None:
