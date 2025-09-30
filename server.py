@@ -4,8 +4,11 @@
 
 # This is adapted from the nicegui_webcam sample to understand the camera
 # logic
+import json
 import signal
 import time
+from datetime import datetime
+from pathlib import Path
 from types import FrameType
 from typing import Any
 
@@ -64,7 +67,7 @@ class Server:
 
         # Defining the main UI.
         # nicegui.ui.button("Take Photo", lambda: print(e))
-        nicegui.ui.button("Take Photo", on_click=self._camera.take_photo)
+        nicegui.ui.button("Take Photo", on_click=self.take_photo)
         nicegui.ui.label("Exposure Control").style(
             "font-size: 20px; font-weight: bold"
         )
@@ -136,6 +139,16 @@ class Server:
             lambda: signal.default_int_handler(sig_num, frame),
             once=True
         )
+
+    async def take_photo(self) -> None:
+        """Take a photo with the camera, and save the photo on disk."""
+        camera_data, jpg_photo, dng_photo = self._camera.take_photo()
+
+        filename = f"IMG_{datetime.isoformat(datetime.now())}".replace(":", "_")  # noqa
+        Path(f"{filename}.jpg").write_bytes(jpg_photo)
+        Path(f"{filename}.dng").write_bytes(dng_photo)
+        with Path(f"{filename}_metadata.json").open("w", encoding="UTF-8") as file:
+            json.dump(camera_data, file, indent=4)
 
     async def set_camera_props(self) -> None:
         """Set the camera configuration properties."""
