@@ -20,10 +20,10 @@ Repository = "https://github.com/marsfan/astro_camera"
 Issues = "https://github.com/marsfan/astro_camera/issues"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.dynamic]
-version = {attr = "astro_camera.__version__"}
+version = { attr = "astro_camera.__version__" }
 
 [project.scripts]
 astro-camera = "astro_camera.__main__:main"

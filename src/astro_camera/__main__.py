@@ -14,19 +14,19 @@ except ImportError:
     PicamCamera = None
 
 
-def main(args_in: Sequence[str] | None = None, webui_reload: bool = False) -> None:
+def main(args_in: Sequence[str] | None = None, webui_debug: bool = False) -> None:
     """Run when called from command line.
 
     Warning:
-        The ``auto_reload`` parameter should not be used unless the
+        The ``debug`` parameter should not be used unless the
         function is directly called from a main guard, as the method
         used for auto-reloading does not work properly elsewhere
 
     Arguments:
         args_in: Optional sequence of arguments to use instead of
             of reading from the command line
-        webui_reload: Enables auto-reloading of the webui when files are
-            changed.
+        webui_debug: Enables auto-reloading of the webui when files are
+            changed, and auto-open the webui on program start
 
     """
     parser = ArgumentParser(description="Astrophotography Camera")
@@ -62,7 +62,7 @@ def main(args_in: Sequence[str] | None = None, webui_reload: bool = False) -> No
         camera = DummyCamera()
 
     if args.tool == "webui":
-        server_main(camera, webui_reload)
+        server_main(camera, webui_debug)
     else:
         raise ValueError("Unknown tool")
 

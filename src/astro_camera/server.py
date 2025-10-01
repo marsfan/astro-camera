@@ -175,18 +175,18 @@ class Server:
         print(self._camera.get_metadata())
 
 
-def server_main(camera: CameraBase, auto_reload: bool = False) -> None:
+def server_main(camera: CameraBase, debug: bool = False) -> None:
     """Run the webui server.
 
     Warning:
-        The ``auto_reload`` parameter should not be used unless the
+        The ``debug`` parameter should not be used unless the
         function is directly called from a main guard.
 
     Arguments:
         camera: The camera to use with the webui.
-        auto_reload: Whether or not to enable auto-reload when package
-            files are modified.
+        debug: Whether or not to enable auto-reload when package
+            files are modified, and auto-open the webpage on launch.
 
     """
     Server(camera)
-    nicegui.ui.run(reload=auto_reload)
+    nicegui.ui.run(reload=debug, show=not debug)
