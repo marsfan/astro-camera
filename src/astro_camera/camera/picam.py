@@ -7,12 +7,12 @@ from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import FileOutput
 from picamera2.request import CompletedRequest
 from threading import Condition
-from io import BytesIO
+from io import BytesIO, BufferedIOBase
 
 from . import CameraBase
 
 
-class StreamingOutput(io.BufferedIOBase):
+class StreamingOutput(BufferedIOBase):
     def __init__(self):
         self.frame = None
         self.condition = Condition()
@@ -35,7 +35,7 @@ class PicamCamera(CameraBase):
         self._picam2 = Picamera2()
 
         # FIXME:
-        self._preview_config = picam2.create_video_configuration(
+        self._preview_config = self._picam2.create_video_configuration(
             main={"size": (640, 480)},
             controls=self._cam_controls
         )
@@ -93,7 +93,7 @@ class PicamCamera(CameraBase):
         # FIXME: Is there a way to do this without using a bytesio?
         dng_buf = BytesIO()
         jpg_buf = BytesIO()
-        request.save("main", jpg_buf)
+        request.save("main", jpg_buf, format="jpg")
         request.save_dng(dng_buf)
         data = {
             "cam_driver": "picamera2",
