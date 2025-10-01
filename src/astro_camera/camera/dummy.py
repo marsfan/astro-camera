@@ -3,7 +3,7 @@
 """Dummy camera driver, using a video to simulate a camera."""
 
 
-from typing import Any, cast
+from typing import Any
 import cv2
 
 from . import CameraBase

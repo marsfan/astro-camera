@@ -18,12 +18,12 @@ import nicegui
 DUMMY_CAMERA = True
 
 if DUMMY_CAMERA:
-    from astro_camera.camera.dummy import Camera
+    from .camera.dummy import Camera
 else:
     try:
-        from astro_camera.camera.picam import Camera
+        from .camera.picam import Camera
     except ImportError:
-        from astro_camera.camera.webcam import Camera
+        from .camera.webcam import Camera
 
 
 class Server:
@@ -183,6 +183,17 @@ class Server:
         print(self._camera.get_metadata())
 
 
-if __name__ in {"__main__", "__mp_main__"}:
+def server_main(auto_reload: bool = False) -> None:
+    """Run the webui server.
+
+    Warning:
+        The ``auto_reload`` parameter should not be used unless the
+        function is directly called from a main guard.
+
+    Arguments:
+        auto_reload: Whether or not to enable auto-reload when package
+            files are modified.
+
+    """
     Server()
-    nicegui.ui.run()
+    nicegui.ui.run(reload=auto_reload)
