@@ -3,7 +3,15 @@
 from argparse import ArgumentParser
 from typing import Sequence
 
-from src.astro_camera.server import server_main
+from .camera import CameraBase
+from .camera.dummy import DummyCamera
+from .camera.opencv_webcam import OpenCVWebcam
+from .server import server_main
+
+try:
+    from .camera.picam import PicamCamera
+except ImportError:
+    PicamCamera = None
 
 
 def main(args_in: Sequence[str] | None = None, webui_reload: bool = False) -> None:
@@ -40,8 +48,22 @@ def main(args_in: Sequence[str] | None = None, webui_reload: bool = False) -> No
     )
     args = parser.parse_args(args_in)
 
+    if args.camera == "picam" and PicamCamera is None:
+        raise RuntimeError(
+            "picamera2 not found. Program is either not running on a "
+            "Raspberry Pi, or the picamera2 module is not installed."
+        )
+
+    camera: CameraBase
+    if args.camera == "picam" and PicamCamera is not None:
+        camera = PicamCamera()
+    elif args.camera == "webcam":
+        camera = OpenCVWebcam()
+    else:
+        camera = DummyCamera()
+
     if args.tool == "webui":
-        server_main(webui_reload)
+        server_main(camera, webui_reload)
     else:
         raise ValueError("Unknown tool")
 

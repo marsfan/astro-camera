@@ -13,7 +13,7 @@ from . import CameraBase
 # TODO: Metdata suport, exposure support
 
 
-class Camera(CameraBase):
+class OpenCVWebcam(CameraBase):
     """Class for manipulating camera via OpenCV."""
 
     def __init__(self) -> None:
