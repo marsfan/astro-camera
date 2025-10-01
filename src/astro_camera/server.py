@@ -139,7 +139,7 @@ class Server:
         filename = f"IMG_{datetime.isoformat(datetime.now())}".replace(":", "_")  # noqa
         Path(f"{filename}.jpg").write_bytes(jpg_photo)
         Path(f"{filename}.dng").write_bytes(dng_photo)
-        with Path(f"{filename}_metadata.json").open("w", encoding="UTF-8") as file:
+        with Path(f"{filename}.metadata.json").open("w", encoding="UTF-8") as file:
             json.dump(camera_data, file, indent=4)
 
     async def set_camera_props(self) -> None:
