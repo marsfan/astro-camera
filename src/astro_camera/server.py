@@ -15,23 +15,15 @@ from typing import Any
 import fastapi
 import nicegui
 
-DUMMY_CAMERA = True
-
-if DUMMY_CAMERA:
-    from .camera.dummy import Camera
-else:
-    try:
-        from .camera.picam import Camera
-    except ImportError:
-        from .camera.webcam import Camera
+from .camera import CameraBase
 
 
 class Server:
     """Main web interface for camera control."""
 
-    def __init__(self) -> None:
+    def __init__(self, camera: CameraBase) -> None:
         """Initialize server."""
-        self._camera = Camera()
+        self._camera = camera
 
         # Sadly, FastAPI does not seem to work on class methods, so we
         # have to embed this function inside the setup function.
@@ -183,7 +175,7 @@ class Server:
         print(self._camera.get_metadata())
 
 
-def server_main(auto_reload: bool = False) -> None:
+def server_main(camera: CameraBase, auto_reload: bool = False) -> None:
     """Run the webui server.
 
     Warning:
@@ -191,9 +183,10 @@ def server_main(auto_reload: bool = False) -> None:
         function is directly called from a main guard.
 
     Arguments:
+        camera: The camera to use with the webui.
         auto_reload: Whether or not to enable auto-reload when package
             files are modified.
 
     """
-    Server()
+    Server(camera)
     nicegui.ui.run(reload=auto_reload)

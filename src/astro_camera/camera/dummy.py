@@ -10,7 +10,7 @@ from . import CameraBase
 from time import monotonic
 
 
-class Camera(CameraBase):
+class DummyCamera(CameraBase):
     """Base class for interacting with a camera."""
 
     def __init__(self) -> None:

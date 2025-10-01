@@ -23,7 +23,7 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 
-class Camera(CameraBase):
+class PicamCamera(CameraBase):
     """Class for manipulating camera via PiCamera2."""
 
     def __init__(self) -> None:
