@@ -139,6 +139,7 @@ class Server:
         camera_data, jpg_photo, dng_photo = self._camera.take_photo()
 
         filename = f"IMG_{datetime.isoformat(datetime.now(UTC))}".replace(":", "_")  # noqa: E501
+        # TODO: Can we await all three (asyncio.gather maybe?)
         await nicegui.run.io_bound(
             lambda: Path(f"{filename}.jpg").write_bytes(jpg_photo),
         )
@@ -148,6 +149,7 @@ class Server:
         await nicegui.run.io_bound(
             lambda: Path(f"{filename}.metadata.json").write_text(
                 json.dumps(camera_data, indent=4),
+                "UTF-8",
             ),
         )
 
