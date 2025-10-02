@@ -27,3 +27,26 @@ version = { attr = "astro_camera.__version__" }
 
 [project.scripts]
 astro-camera = "astro_camera.__main__:main"
+
+[tool.pyright]
+reportMissingTypeStubs = false
+
+[tool.ruff]
+select = ["ALL"]
+target-version = "py311" # Debian 12 comes with Python 3.11, so consider that minimum target
+line-length = 79
+ignore = [
+    "FIX001",   # Don't want to show warnings for FIXME comments
+    "FIX002",   # Don't want to show warnings for TODO comments
+    "TD001",    # I'm ok with comments that start with FIXME
+    "TD002",    # Don't care about adding authors to TODO comments
+    "TD003",    # Don't care about adding issue links to TODO comments
+
+
+    # TODO: These might be good ones to later uncomment and fix
+    "TRY003",   # Long messages in exception are ok
+    "EM101",    # String literal in exception is OK
+    "T201",     # Print statements in code are OK
+    "FBT001"    # Boolean positional arguments are OK
+
+]
