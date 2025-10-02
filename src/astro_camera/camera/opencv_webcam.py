@@ -28,6 +28,10 @@ class OpenCVWebcam(CameraBase):
 
         """
         rc, img = self._capture.read()
+        # Internally, the image array is height X width.
+        # But then the resize function expects us to provide width X height
+        height, width, _ = img.shape
+        img = cv2.resize(img, (640, int(640 / width * height)))
         rc, frame = cv2.imencode(".jpg", img)
         return bytes(frame)
 

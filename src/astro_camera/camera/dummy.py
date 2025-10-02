@@ -36,6 +36,11 @@ class DummyCamera(CameraBase):
         rc, img = self._video.read()
         if not rc:
             self._video.set(2, 0)
+            rc, img = self._video.read()
+        # Internally, the image array is height X width.
+        # But then the resize function expects us to provide width X height
+        height, width, _ = img.shape
+        img = cv2.resize(img, (640, int(640 / width * height)))
         rc, self._last_frame = cv2.imencode(".jpg", img)
         self._last_time = monotonic()
 

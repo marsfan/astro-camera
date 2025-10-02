@@ -17,6 +17,9 @@ class CameraBase(ABC):
     def get_frame(self) -> bytes:
         """Get a single frame for real-time streaming.
 
+        The output from should have a width of 640 pixels, to keep
+        preview size and network use low.
+
         Returns:
             Single frame for display.
 
