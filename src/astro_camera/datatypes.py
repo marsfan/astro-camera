@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """Data types for the program."""
-from typing import Optional, TypedDict
-from libcamera import Transform, ColorSpace, controls, Rectangle
-from typing import Any, Literal
-# TODO: Submit typings to Raspi repo
+from typing import Any, Literal, TypedDict
+
+from libcamera import ColorSpace, Rectangle, Transform, controls
+
+# TODO: Submit typings to picamera2 repo?
 
 
 class Options(TypedDict):
@@ -61,7 +62,7 @@ class CameraProperties(TypedDict):
     """
 
     SensorSensitivity: float
-    """Releative sensitivity of current camera mode compared to other modes."""
+    """relative sensitivity of current camera mode compared to other modes."""
 
     UnitCellSize: tuple[int, int]
     """Sensor Pixel size in (x, y) nanometers."""
@@ -71,17 +72,19 @@ class CameraControls(TypedDict):
     """Runtime controls for the camera.
 
     Controls can be set in initial configuration, before starting the
-    camera, or during camera running using the :py:meth:`Picamera.set_controls` method
+    camera, or during camera running using the
+    :py:meth:`Picamera.set_controls` method
 
     Note:
-        Not all memebrs may be present for a given camera.
-        Checking for existince is recommended.
+        Not all members may be present for a given camera.
+        Checking for existence is recommended.
 
     """
-    AeContstraintMode: controls.AeConstraintModeEnum
+
+    AeConstraintMode: controls.AeConstraintModeEnum
     """Constraint Mode of the AEC/AGC algorithm."""
 
-    AeEnable: bool  # FIXME: Seems to be a 3 elemnt tuple?
+    AeEnable: bool  # FIXME: Seems to be a 3 element tuple?
     """Turn the AEC/AGC algorithm on and off."""
 
     AeExposureMode: controls.AeExposureModeEnum
@@ -105,7 +108,7 @@ class CameraControls(TypedDict):
     AfPause: controls.AfPauseEnum
     """Pause continuous autofocus.
 
-    Only has an effect wehen in continous autofocus mode.
+    Only has an effect when in continuous autofocus mode.
 
     """
 
@@ -121,7 +124,7 @@ class CameraControls(TypedDict):
     AfWindows: list[tuple[int, int, int, int]]
     """Location of windows in the image to use for measuring focus.
 
-    This should be a list of rectanges in the image. Each rectangle is
+    This should be a list of rectangles in the image. Each rectangle is
     represented by a tuple of [x_offset, y_offset, width, height].
 
     Rectangles refer to the maximum scaler crop window.
@@ -129,7 +132,7 @@ class CameraControls(TypedDict):
 
     """
 
-    AnalogueGain: Any  # TODO
+    AnalogueGain: Any  # TODO: Add correct type hint
     "Consult the camera_controls property."
 
     AwbEnable: bool  # FIXME: Seems to be 3 element tuple?
@@ -141,9 +144,14 @@ class CameraControls(TypedDict):
     Brightness: float
     """Adjust image brightness from -1.0 to 1.0."""
 
-    ColourCorrectionMatrix: tuple[float, float,
-                                  float, float, float, float, float, float, float]
-    """3x3 matrix used by the ISP to convert raw camera colors to sRGB. Read Only."""
+    ColourCorrectionMatrix: tuple[float, float, float,
+                                  float, float, float,
+                                  float, float, float]
+    """3x3 matrix used by the ISP to convert raw camera colors to sRGB.
+
+    This is Read Only
+
+    """
 
     ColourGains: tuple[float, float]
     """Pair of color gains. First number is red gain, second is blue gain.
@@ -153,7 +161,11 @@ class CameraControls(TypedDict):
     """
 
     ColourTemperature: int
-    """Estimate of the color temperature in Kelvin of the current image. Read Only."""
+    """Estimate of the color temperature in Kelvin of the current image.
+
+    This is Read Only.
+
+    """
 
     Contrast: float
     """The contrast of the image.
@@ -187,14 +199,14 @@ class CameraControls(TypedDict):
     """
 
     FrameDuration: int
-    """Amouont of time in us since previous camera frame.
+    """Amount of time in us since previous camera frame.
 
     Only found in image metadata. Framerate should be changed with the
     :py:attr:`CameraControls.FrameDurationLimits` control.
 
     """
 
-    FrameDurationLimits: Any  # TODO: Consulte the camera_controls property
+    FrameDurationLimits: Any  # TODO: consult the camera_controls property
     """Minimum and maximum time (in us) that the sensor can take to deliver a frame."""
 
     HdrChannel: controls.HdrChannelEnum
@@ -236,7 +248,7 @@ class CameraControls(TypedDict):
     """
 
     ScalerCrop: Rectangle
-    """The portion of the image recieved from the sensor that is saved as an image."""
+    """The portion of the image received from the sensor that is saved as an image."""
 
     SensorTimestamp: int
     """Time the frame was produced by the sensor in nanoseconds since boot. Read only."""
@@ -253,8 +265,8 @@ class CameraControls(TypedDict):
 
     """
 
-    # FIXME: Finish writing this, see Picameara document
-    # FIXME Indicate they might nott be present. Need to check typing docs
+    # FIXME: Finish writing this, see Picamera document
+    # FIXME: Indicate they might not be present. Need to check typing docs
 
 
 class SensorMode(TypedDict):
@@ -266,7 +278,8 @@ class SensorMode(TypedDict):
     crop_limits: tuple[int, int, int, int]
     """Actual field of view for the mode."""
 
-    # NOTE: On HQ camera, attaching to the 1.8v XVS pin can allow for even longer exposures.
+    # NOTE: On HQ camera, attaching to the 1.8v XVS pin can allow for
+    # even longer exposures.
     # See https://forums.raspberrypi.com/viewtopic.php?t=347476
     exposure_limits: tuple[int, int]
     """Minimum and maximum allowed exposure time in microseconds."""
@@ -279,10 +292,17 @@ class SensorMode(TypedDict):
 
     # TODO: Proper reference to sstreamconfig in docstring
     size: tuple[int, int]
-    """Sensor output resolution. Can be passed to the 'size' parameter for a stream."""
+    """Sensor output resolution.
+
+    Can be passed to the 'size' parameter for a stream.
+    """
 
     unpacked: str
-    """Unpacked Raw format for the mode. Use in place of 'format' of unpacked raws are required."""
+    """Unpacked Raw format for the mode.
+
+    Use in place of 'format' of unpacked raws are required.
+
+    """
 
 
 class StreamConfiguration(TypedDict):
@@ -294,10 +314,12 @@ class StreamConfiguration(TypedDict):
     format: str  # TODO: literal?
     """Image format. Must be YUV420 on RPi 4 and older"""
 
-    stride: int  # FIXME: Indicate this is not user controllable. Need to check typing docs
+    # FIXME: Indicate this is not user controllable. Need to check typing docs
+    stride: int
     """Length of each row in the image in bytes (read only)."""
 
-    framesize: int  # FIXME: Indicate this is not user controllable. Need to check typing docs
+    # FIXME: Indicate this is not user controllable. Need to check typing docs
+    framesize: int
     """Total amount of memory the image will occupy (read only)."""
 
 
@@ -321,7 +343,7 @@ class CameraConfiguration(TypedDict):
     """The color space of output images."""
 
     buffer_count: int
-    """Number of bufffers to allocate for camera stream."""
+    """Number of buffers to allocate for camera stream."""
 
     queue: bool
     """Whether system can queue up a frame ready for a capture request."""
@@ -333,17 +355,17 @@ class CameraConfiguration(TypedDict):
     """
 
     # FIXME: raw might not be ok
-    display: Optional[Literal["main", "lowres", "raw"]]
+    display: Literal["main", "lowres", "raw"] | None
     """Names of the streams to show in preview window."""
 
     # FIXME: raw might not be ok
-    encode: Optional[Literal["main", "lowres", "raw"]]
+    encode: Literal["main", "lowres", "raw"] | None
     """Names of the streams to encode if a video encoding is started."""
 
     controls: CameraControls
     """Initial values to set to camera run time controls."""
 
-    lores: Optional[StreamConfiguration]
+    lores: StreamConfiguration | None
     """Configuration options for the low resolution stream."""
 
     main: StreamConfiguration
@@ -353,4 +375,4 @@ class CameraConfiguration(TypedDict):
     """Configuration options for the raw image stream."""
 
     use_case: str
-    """Indicates the inteded use case of the generated configuration."""
+    """Indicates the intended use case of the generated configuration."""

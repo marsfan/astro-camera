@@ -2,42 +2,40 @@
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via PiCamera2."""
 
+from io import BufferedIOBase, BytesIO
+from threading import Condition
+
 from picamera2 import Picamera2
 from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import FileOutput
-from picamera2.request import CompletedRequest
-from threading import Condition
-from io import BytesIO, BufferedIOBase
 
 from . import CameraBase
 
 
 class StreamingOutput(BufferedIOBase):
-    def __init__(self):
+    def __init__(self) -> None:
         self.frame = None
         self.condition = Condition()
 
-    def write(self, buf):
+    def write(self, buf: bytes | None) -> None:
         with self.condition:
             self.frame = buf
             self.condition.notify_all()
 
 
-class PicamCamera(CameraBase):
+class PiCamera(CameraBase):
     """Class for manipulating camera via PiCamera2."""
 
     def __init__(self) -> None:
         """Initialize Camera."""
-
         # FIXME: Support initialization args for controls.
         # and preview config (namely size)
         self._cam_controls = {"AeEnable": True, "ExposureValue": 0.0}
         self._picam2 = Picamera2()
 
-        # FIXME:
         self._preview_config = self._picam2.create_video_configuration(
             main={"size": (640, 480)},
-            controls=self._cam_controls
+            controls=self._cam_controls,
         )
 
         self._picam2.configure(self._preview_config)
@@ -67,6 +65,7 @@ class PicamCamera(CameraBase):
                 * Image metadata
                 * Image in JPG
                 * Image in DNG
+
         """
         # Copy over metadata from preview mode that we want.
         controls = {}
@@ -85,12 +84,12 @@ class PicamCamera(CameraBase):
         self._picam2.stop_encoder()
 
         # Take the photo
-        request: CompletedRequest = self._picam2.switch_mode_and_capture_request(
-            capture_config
+        request = self._picam2.switch_mode_and_capture_request(
+            capture_config,
         )
 
         # TODO: Encode bytes.
-        # FIXME: Is there a way to do this without using a bytesio?
+        # FIXME: Is there a way to do this without using a BytesIO?
         dng_buf = BytesIO()
         jpg_buf = BytesIO()
         request.save("main", jpg_buf, format="jpg")
@@ -98,8 +97,8 @@ class PicamCamera(CameraBase):
         data = {
             "cam_driver": "picamera2",
             "metadata": request.get_metadata(),
-            # "config": request.config, # FIXME: Get this working
-            "camera_properties": self._picam2.camera_properties
+            # "config": request.config, # FIXME: Get this working # noqa: ERA001,E501
+            "camera_properties": self._picam2.camera_properties,
         }
         # Rewind buffers so we can dump everything
         dng_buf.seek(0)

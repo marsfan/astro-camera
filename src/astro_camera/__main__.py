@@ -1,20 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
+"""Command line interface for the program."""
 from argparse import ArgumentParser
-from typing import Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
-from .camera import CameraBase
 from .camera.dummy import DummyCamera
 from .camera.opencv_webcam import OpenCVWebcam
 from .server import server_main
 
+if TYPE_CHECKING:
+    from .camera import CameraBase
+
 try:
-    from .camera.picam import PicamCamera
+    from .camera.picam import PiCamera
 except ImportError:
-    PicamCamera = None
+    PiCamera = None
 
 
-def main(args_in: Sequence[str] | None = None, webui_debug: bool = False) -> None:
+def main(
+        args_in: Sequence[str] | None = None,
+        *,
+        webui_debug: bool = False,
+) -> None:
     """Run when called from command line.
 
     Warning:
@@ -36,7 +44,7 @@ def main(args_in: Sequence[str] | None = None, webui_debug: bool = False) -> Non
         "tool",
         type=str,
         choices=["webui"],
-        help="The tool to launch"
+        help="The tool to launch",
     )
 
     parser.add_argument(
@@ -44,25 +52,25 @@ def main(args_in: Sequence[str] | None = None, webui_debug: bool = False) -> Non
         "-c",
         choices=["picam", "webcam", "dummy"],
         default="picam",
-        help="Type of camera to launch with."
+        help="Type of camera to launch with.",
     )
     args = parser.parse_args(args_in)
 
     camera: CameraBase
     if args.camera == "picam":
-        if PicamCamera is None:
+        if PiCamera is None:
             raise RuntimeError(
                 "picamera2 not found. Program is either not running on a "
-                "Raspberry Pi, or the picamera2 module is not installed."
+                "Raspberry Pi, or the picamera2 module is not installed.",
             )
-        camera = PicamCamera()
+        camera = PiCamera()
     elif args.camera == "webcam":
         camera = OpenCVWebcam()
     else:
         camera = DummyCamera()
 
     if args.tool == "webui":
-        server_main(camera, webui_debug)
+        server_main(camera, debug=webui_debug)
     else:
         raise ValueError("Unknown tool")
 

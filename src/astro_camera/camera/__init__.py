@@ -34,6 +34,7 @@ class CameraBase(ABC):
                 * Image metadata
                 * Image in JPG
                 * Image in DNG
+
         """
 
     @abstractmethod

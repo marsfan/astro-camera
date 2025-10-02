@@ -1,5 +1,14 @@
 {
     "cSpell.words": [
-        "picamera2"
+        "cv2.imencode",
+        "dioptres",
+        "MJPEG",
+        "opencv_webcam",
+        "picam",
+        "picamera",
+        "picamera2",
+        "webui",
+        "opencv-python",
+        "pyright"
     ]
 }

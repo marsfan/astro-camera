@@ -2,11 +2,10 @@
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via OpenCV."""
 from typing import Any
+
 import cv2
 
 from . import CameraBase
-
-# TODO: Abstract base class for this and picamera
 
 # TODO: Context manager suppot
 
@@ -43,6 +42,7 @@ class OpenCVWebcam(CameraBase):
                 * Image metadata
                 * Image in JPG
                 * Image in DNG
+
         """
         # FIXME: Need to figure out how to encode DNG. Seems OpenCV
         # Does not have that by default.
@@ -53,14 +53,14 @@ class OpenCVWebcam(CameraBase):
         data: dict[str, Any] = {
             "cam_driver": "cv2",
             "metadata": self.get_metadata(),
-            # "config": request.config, # FIXME: Get this working
+            # "config": request.config, # FIXME: Get this working # noqa: ERA001,E501
 
-            # FIXME: DO this with opencv
-            "camera_properties": {}
+            # FIXME: DO this with OpenCV
+            "camera_properties": {},
             # "camera_properties": self._picam2.camera_properties
         }
 
-        return data, bytes(jpg), bytes()
+        return data, bytes(jpg), b""
 
     def get_metadata(self) -> dict[str, float]:
         """Get camera metadata.
@@ -69,10 +69,10 @@ class OpenCVWebcam(CameraBase):
             Camera Metadata.
 
         """
-        # FIXME: Figure out how to do this in opencv
+        # FIXME: Figure out how to do this in OpenCV
         return {
             "ExposureTime": 0,
-            "AnalogueGain": 0
+            "AnalogueGain": 0,
         }
 
     def get_controls(self) -> dict[str, float]:
@@ -82,7 +82,7 @@ class OpenCVWebcam(CameraBase):
             Camera Controls
 
         """
-        # FIXME: Figure out for opencv
+        # FIXME: Figure out for OpenCV
         return {"AeEnable": False, "ExposureValue": 0.0}
 
     def set_controls(self, controls: dict[str, bool | float]) -> None:
@@ -92,7 +92,7 @@ class OpenCVWebcam(CameraBase):
             controls: The camera controls to set.
 
         """
-        # TODO: Figure out how to do this for opencv
+        # TODO: Figure out how to do this for OpenCV
 
     def set_exposure_time(self, time: float) -> None:
         """Set the exposure time.

@@ -3,11 +3,12 @@
 """Dummy camera driver, using a video to simulate a camera."""
 
 
+from time import monotonic
 from typing import Any
+
 import cv2
 
 from . import CameraBase
-from time import monotonic
 
 
 class DummyCamera(CameraBase):
@@ -15,7 +16,6 @@ class DummyCamera(CameraBase):
 
     def __init__(self) -> None:
         """Initialize camera."""
-
         self._video = cv2.VideoCapture("test_video.mp4")
         rc, img = self._video.read()
 
@@ -23,11 +23,11 @@ class DummyCamera(CameraBase):
 
         self._metadata = {
             "ExposureTime": 0.0,
-            "AnalogueGain": 0.0
+            "AnalogueGain": 0.0,
         }
         self._controls: dict[str, float | bool] = {
             "AeEnable": False,
-            "ExposureValue": 0.0
+            "ExposureValue": 0.0,
         }
         self._last_time = monotonic()
 
@@ -62,6 +62,7 @@ class DummyCamera(CameraBase):
                 * Image metadata
                 * Image in JPG
                 * Image in DNG
+
         """
         # FIXME: Include image metadata.
         self._update_frame()
@@ -69,14 +70,14 @@ class DummyCamera(CameraBase):
         data: dict[str, Any] = {
             "cam_driver": "cv2",
             "metadata": self.get_metadata(),
-            # "config": request.config, # FIXME: Get this working
+            # "config": request.config, # FIXME: Get this working # noqa: E501,ERA001
 
-            # FIXME: DO this with opencv
-            "camera_properties": {}
+            # FIXME: DO this with OpenCV
+            "camera_properties": {},
             # "camera_properties": self._picam2.camera_properties
         }
 
-        return data, bytes(self._last_frame), bytes()
+        return data, bytes(self._last_frame), b""
 
     def get_metadata(self) -> dict[str, float]:
         """Get camera metadata.
@@ -175,8 +176,8 @@ class DummyCamera(CameraBase):
             Whether or not auto-exposure is enabled
 
         """
-        # Assertion helps with type hinting
-        assert isinstance(self._controls["AeEnable"], bool)
+        # Assertion helps with type hinting, so we are ok with it here
+        assert isinstance(self._controls["AeEnable"], bool)  # noqa: S101
         return self._controls["AeEnable"]
 
     def close(self) -> None:
