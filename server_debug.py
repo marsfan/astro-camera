@@ -9,4 +9,4 @@ module/application, this is needed to allow rapid development of the UI.
 from astro_camera.__main__ import main
 
 if __name__ in {"__main__", "__mp_main__"}:
-    main(webui_reload=True)
+    main(webui_debug=True)
