@@ -25,8 +25,20 @@ class Server:
         """Initialize server."""
         self._camera = camera
 
-        # Sadly, FastAPI does not seem to work on class methods, so we
-        # have to embed this function inside the setup function.
+        self.ev = 0.0
+        self.exposure = 0.0125  # 1/8 second
+        self.gain = 1.0
+        self.ae_enable = True
+
+        nicegui.app.on_shutdown(self.cleanup)
+        # We also need to disconnect clients when the app is stopped with
+        # Ctrl+C, because otherwise they will keep requesting images which lead
+        # to unfinished subprocesses blocking the shutdown.
+        signal.signal(signal.SIGINT, self.handle_sigint)
+
+        # Sadly, FastAPI does not seem to work on class methods, so
+        # we have to embed decorated functions inside this one
+        # in order to allow access to class members
 
         @nicegui.app.get("/video/frame")
         async def grab_frame() -> fastapi.Response:
@@ -38,74 +50,67 @@ class Server:
             frame = await nicegui.run.io_bound(self._camera.get_frame)
             return fastapi.Response(content=frame, media_type="image/jpeg")
 
-        nicegui.ui.page_title("Astro Camera Control")
+        @nicegui.ui.page("/", title="Astro Camera Control")
+        def root_page() -> None:
+            """Create top level (i.e. root) page."""
+            # For non-flickering image updates and automatic bandwidth
+            # adaptation an interactive image is much better than `ui.image()`.
+            video_image = nicegui.ui.interactive_image()
 
-        # For non-flickering image updates and automatic bandwidth
-        # adaptation an interactive image is much better than `ui.image()`.
-        video_image = nicegui.ui.interactive_image()
-
-        self.ev = 0.0
-        self.exposure = 0.0125  # 1/8 second
-        self.gain = 1.0
-        self.ae_enable = True
-
-        # Timer to constantly update image source
-        # We are appending current timestamp to the source to force browser
-        # caching to update
-        nicegui.ui.timer(
-            interval=0.1,
-            callback=lambda: video_image.set_source(
-                f"/video/frame?{time.time()}"),
-        )
-
-        # Defining the main UI.
-        nicegui.ui.button("Take Photo", on_click=self.take_photo)
-        nicegui.ui.label("Exposure Control").style(
-            "font-size: 20px; font-weight: bold",
-        )
-        self.ae_switch = nicegui.ui.switch(
-            "Auto Exposure").bind_value(self, "ae_enable")
-        self.exposure_entry = nicegui.ui.number(label="Exposure").bind_enabled_from(
-            self.ae_switch,
-            "value",
-            # Inverts the switch value, so when switch is on, we disable widget
-            backward=lambda value: not value,
-        ).bind_value(self, "exposure")
-        self.gain_entry = nicegui.ui.number(label="Gain").bind_enabled_from(
-            self.ae_switch,
-            "value",
-            # Inverts the switch value, so when switch is on, we disable widget
-            backward=lambda value: not value,
-        ).bind_value(self, "gain")
-        with nicegui.ui.row().classes("w-full no-wrap"):
-            self.ev_slider = nicegui.ui.slider(
-                min=-8,
-                max=8,
-                step=0.1,
-                value=0,
-            ).style("max-width: 180px").bind_value(self, "ev")
-            nicegui.ui.label().bind_text_from(self, "ev")
-            nicegui.ui.label("EV")
-
-        with nicegui.ui.row():
-            nicegui.ui.button(
-                "Set Options",
-                on_click=self.set_camera_props,
+            # Timer to constantly update image source
+            # We are appending current timestamp to the source to force browser
+            # caching to update
+            # FIXME: Need to have this outside of a specific page, and we
+            # then update a variable all clients read from. That might fix
+            # occasional crashes
+            nicegui.ui.timer(
+                interval=0.1,
+                callback=lambda: video_image.set_source(
+                    f"/video/frame?{time.time()}"),
             )
-            nicegui.ui.button(
-                "Reset Options",
-                on_click=self.reset_camera_props,
-            )
-        nicegui.ui.button(
-            "Dump Stuff",
-            on_click=self.debug,
-        )
 
-        nicegui.app.on_shutdown(self.cleanup)
-        # We also need to disconnect clients when the app is stopped with
-        # Ctrl+C, because otherwise they will keep requesting images which lead
-        # to unfinished subprocesses blocking the shutdown.
-        signal.signal(signal.SIGINT, self.handle_sigint)
+            # Defining the main UI.
+            nicegui.ui.button("Take Photo", on_click=self.take_photo)
+            nicegui.ui.label("Exposure Control").style(
+                "font-size: 20px; font-weight: bold",
+            )
+            ae_switch = nicegui.ui.switch(
+                "Auto Exposure").bind_value(self, "ae_enable")
+            nicegui.ui.number(label="Exposure").bind_enabled_from(
+                ae_switch,
+                "value",
+                # Inverts the switch value, so when switch is on, we disable widget
+                backward=lambda value: not value,
+            ).bind_value(self, "exposure")
+            nicegui.ui.number(label="Gain").bind_enabled_from(
+                ae_switch,
+                "value",
+                # Inverts the switch value, so when switch is on, we disable widget
+                backward=lambda value: not value,
+            ).bind_value(self, "gain")
+            with nicegui.ui.row().classes("w-full no-wrap"):
+                nicegui.ui.slider(
+                    min=-8,
+                    max=8,
+                    step=0.1,
+                    value=0,
+                ).style("max-width: 180px").bind_value(self, "ev")
+                nicegui.ui.label().bind_text_from(self, "ev")
+                nicegui.ui.label("EV")
+
+            with nicegui.ui.row():
+                nicegui.ui.button(
+                    "Set Options",
+                    on_click=self.set_camera_props,
+                )
+                nicegui.ui.button(
+                    "Reset Options",
+                    on_click=self.reset_camera_props,
+                )
+            nicegui.ui.button(
+                "Dump Stuff",
+                on_click=self.debug,
+            )
 
     async def cleanup(self) -> None:
         """Cleanup the user interface."""
@@ -157,10 +162,10 @@ class Server:
         """Set the camera configuration properties."""
         modified_controls: dict[str, Any] = {}
 
-        if not self.ae_switch.value:
+        if not self.ae_enable:
 
-            modified_controls["ExposureTime"] = self.exposure_entry.value
-            modified_controls["AnalogueGain"] = self.gain_entry.value
+            modified_controls["ExposureTime"] = self.exposure
+            modified_controls["AnalogueGain"] = self.gain
             modified_controls["ExposureValue"] = self.ev
             modified_controls["AeEnable"] = False
         else:
@@ -200,4 +205,4 @@ def server_main(camera: CameraBase, *, debug: bool = False) -> None:
 
     """
     Server(camera)
-    nicegui.ui.run(reload=debug, show=not debug)
+    nicegui.ui.run(reload=debug, show=debug)
