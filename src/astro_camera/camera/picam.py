@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via PiCamera2."""
 
+from copy import deepcopy
 from io import BufferedIOBase, BytesIO
 from threading import Condition
 
@@ -138,6 +139,15 @@ class PiCamera(CameraBase):
 
         """
         self._cam_controls = controls
+
+        # Setting preview controls, we want to clamp exposure time to
+        # no more than 1/5 sec to maintain a useable framerate
+        # FIXME: Need a way to indicate this on the UI.
+        # UI probably needs a "current values" readout.
+        preview_controls = deepcopy(controls)
+        preview_controls["ExposureTime"] = min(controls["ExposureTime"], 0.2)
+
+        self._picam2.set_controls(self._cam_controls)
 
     def set_exposure_time(self, time: float) -> None:
         """Set the exposure time.
