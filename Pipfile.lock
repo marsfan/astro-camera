@@ -648,12 +648,12 @@
         },
         "nicegui": {
             "hashes": [
-                "sha256:21e7620c99aeeb535665e81e45ef2f9eeda95f6a9e35cee542414a10bbe61b77",
-                "sha256:9b810fe75f3dd1ff926e3d96d71e25031387fe5b7a21d32159a32611b8023423"
+                "sha256:081248bc61f874ef0d40ffe8d0dc79da7b853bb2b8b2c2bfc7a52202760c7c1d",
+                "sha256:abe958c99d75a2e9ab19de75f60130e70a098046b6cde5520c518a697b6167bc"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.8' and python_version < '4.0'",
-            "version": "==2.24.2"
+            "markers": "python_version >= '3.9' and python_version < '4.0'",
+            "version": "==3.0.0"
         },
         "numpy": {
             "hashes": [
@@ -1080,11 +1080,11 @@
                 "asyncio-client"
             ],
             "hashes": [
-                "sha256:7de5ad8a55efc33e17897f6cf91d20168d3d259f98c38d38e2940af83136d6f8",
-                "sha256:d057737f658b3948392ff452a5c865c5ccc969859c37cf095a73393ce755f98e"
+                "sha256:3419f5917f0e3942317836a77146cb4caa23ad804c8fd1a7e3f44a6657a8406e",
+                "sha256:bf49657073b90ee09e4cbd6651044b46bb526694276621e807a1b8fcc0c1b25b"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==5.14.0"
+            "version": "==5.14.1"
         },
         "pyyaml": {
             "hashes": [
