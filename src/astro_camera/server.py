@@ -44,6 +44,7 @@ class Server:
         # we have to embed decorated functions inside this one
         # in order to allow access to class members
 
+        # FIXME: Despite using async/await, this can still lag the webui. Need to fix
         @nicegui.app.get("/video/frame")
         async def grab_frame() -> fastapi.Response:
             """Grab a single frame from the camera and put it on the UI."""

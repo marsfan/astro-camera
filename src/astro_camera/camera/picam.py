@@ -84,6 +84,8 @@ class PiCamera(CameraBase):
         self._picam2.stop_encoder()
 
         # Take the photo
+        # FIXME: After it switches back, controls are defaults, not last
+        # user specified values
         request = self._picam2.switch_mode_and_capture_request(
             capture_config,
         )
@@ -139,6 +141,15 @@ class PiCamera(CameraBase):
         """
         self._cam_controls = controls
 
+        # We need to change controls to allow for frame to take
+        # longer than default. If we don't change this, controls will
+        # be locked at lower value than we specified.
+        # https://forums.raspberrypi.com/viewtopic.php?t=291474
+        self._cam_controls["FrameDurationLimits"] = (
+            0,
+            controls["ExposureTime"] + 1000
+        )
+
         # Setting preview controls, we want to clamp exposure time to
         # no more than 1/5 sec to maintain a useable framerate
         # FIXME: Need a way to indicate this on the UI.
@@ -146,9 +157,15 @@ class PiCamera(CameraBase):
         preview_controls = deepcopy(controls)
         if "ExposureTime" in controls:
             preview_controls["ExposureTime"] = min(
-                controls["ExposureTime"], 0.2)
+                controls["ExposureTime"],
+                200000
+            )
+            preview_controls["FrameDurationLimits"] = (
+                0,
+                controls["ExposureTime"] + 1000
+            )
 
-        self._picam2.set_controls(self._cam_controls)
+        self._picam2.set_controls(preview_controls)
 
     def set_exposure_time(self, time: float) -> None:
         """Set the exposure time.
