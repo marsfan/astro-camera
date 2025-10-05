@@ -3,6 +3,10 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
+# 32 bit Raspberry Pi OS tends to not have wheels in PyPi, so we
+# can use the piwheels project instead to speed up installs on that
+# platform.
 [[source]]
 url =" https://www.piwheels.org/simple"
 verify_ssl = true
@@ -19,6 +23,9 @@ astro-camera = {file = ".", editable = true}
 
 [dev-packages]
 build = "*"
+mypy = "*"
+ruff = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.13"
