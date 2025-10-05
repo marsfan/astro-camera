@@ -56,18 +56,21 @@ def main(
     )
     args = parser.parse_args(args_in)
 
-    camera: CameraBase
+    # FIXME: Move camera constructor back out to here, but then
+    # have hardware acquisition as a separate method that the on_startup()
+    # can call.
+    # This will also help with converting cameras to use context manager
     if args.camera == "picam":
         if PiCamera is None:
             raise RuntimeError(
                 "picamera2 not found. Program is either not running on a "
                 "Raspberry Pi, or the picamera2 module is not installed.",
             )
-        camera = PiCamera()
+        camera = PiCamera
     elif args.camera == "webcam":
-        camera = OpenCVWebcam()
+        camera = OpenCVWebcam
     else:
-        camera = DummyCamera()
+        camera = DummyCamera
 
     if args.tool == "webui":
         server_main(camera, debug=webui_debug)
