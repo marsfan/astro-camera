@@ -181,7 +181,7 @@ class Server:
 
         if not self.ae_enable:
 
-            modified_controls["ExposureTime"] = self.exposure
+            modified_controls["ExposureTime"] = int(self.exposure * 1000000)
             modified_controls["AnalogueGain"] = self.gain
             modified_controls["ExposureValue"] = self.ev
             modified_controls["AeEnable"] = False
@@ -219,7 +219,7 @@ class Server:
         """
         video_image.set_source(f"/video/frame?{time.time()}")
         metadata = self._camera.get_metadata()
-        self.current_exposure = metadata["ExposureTime"]
+        self.current_exposure = metadata["ExposureTime"] / 1000000
         self.current_gain = metadata["AnalogueGain"]
         # FIXME: Not in metadata, where do I get this?
         # self.current_ev = metadata["ExposureValue"]
