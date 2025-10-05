@@ -70,9 +70,8 @@ class PiCamera(CameraBase):
         """
         # Copy over metadata from preview mode that we want.
         controls = {}
-        md = self.get_metadata()
-        controls["ExposureTime"] = md["ExposureTime"]
-        controls["AnalogueGain"] = md["AnalogueGain"]
+        controls["ExposureTime"] = self._cam_controls["ExposureTime"]
+        controls["AnalogueGain"] = self._cam_controls["AnalogueGain"]
         controls["AeEnable"] = self._cam_controls["AeEnable"]
         controls["ExposureValue"] = self._cam_controls["ExposureValue"]
 
