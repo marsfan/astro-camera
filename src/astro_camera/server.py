@@ -30,6 +30,10 @@ class Server:
         self.gain = 1.0
         self.ae_enable = True
 
+        self.current_exposure = 0.0125
+        self.current_gain = 0.0
+        self.current_ev = 0.0
+
         nicegui.app.on_shutdown(self.cleanup)
         # We also need to disconnect clients when the app is stopped with
         # Ctrl+C, because otherwise they will keep requesting images which lead
@@ -65,8 +69,7 @@ class Server:
             # occasional crashes
             nicegui.ui.timer(
                 interval=0.1,
-                callback=lambda: video_image.set_source(
-                    f"/video/frame?{time.time()}"),
+                callback=lambda: self.update_image(video_image),
             )
 
             # Defining the main UI.
@@ -76,18 +79,32 @@ class Server:
             )
             ae_switch = nicegui.ui.switch(
                 "Auto Exposure").bind_value(self, "ae_enable")
-            nicegui.ui.number(label="Exposure").bind_enabled_from(
-                ae_switch,
-                "value",
-                # Inverts the switch value, so when switch is on, we disable widget
-                backward=lambda value: not value,
-            ).bind_value(self, "exposure")
-            nicegui.ui.number(label="Gain").bind_enabled_from(
-                ae_switch,
-                "value",
-                # Inverts the switch value, so when switch is on, we disable widget
-                backward=lambda value: not value,
-            ).bind_value(self, "gain")
+            with nicegui.ui.row():
+                nicegui.ui.number(label="Exposure").bind_enabled_from(
+                    ae_switch,
+                    "value",
+                    # Inverts the switch value, so when switch is on,
+                    # we disable widget
+                    backward=lambda value: not value,
+                ).bind_value(self, "exposure")
+                nicegui.ui.label().bind_text_from(
+                    self,
+                    "current_exposure",
+                    backward=lambda v: f"Current Exposure Time: {v:0.1f}"
+                )
+            with nicegui.ui.row():
+                nicegui.ui.number(label="Gain").bind_enabled_from(
+                    ae_switch,
+                    "value",
+                    # Inverts the switch value, so when switch is on,
+                    # we disable widget
+                    backward=lambda value: not value,
+                ).bind_value(self, "gain")
+                nicegui.ui.label().bind_text_from(
+                    self,
+                    "current_gain",
+                    backward=lambda v: f"Current Gain: {v:.1f}"
+                )
             with nicegui.ui.row().classes("w-full no-wrap"):
                 nicegui.ui.slider(
                     min=-8,
@@ -189,6 +206,23 @@ class Server:
         """Print camera information to console."""
         print(self._camera.get_controls())
         print(self._camera.get_metadata())
+
+    def update_image(
+            self,
+            video_image: nicegui.ui.interactive_image,
+    ) -> None:
+        """Update the data from the camera on the web UI.
+
+        Arguments:
+            video_image: Image to update
+
+        """
+        video_image.set_source(f"/video/frame?{time.time()}")
+        metadata = self._camera.get_metadata()
+        self.current_exposure = metadata["ExposureTime"]
+        self.current_gain = metadata["AnalogueGain"]
+        # FIXME: Not in metadata, where do I get this?
+        # self.current_ev = metadata["ExposureValue"]
 
 
 def server_main(camera: CameraBase, *, debug: bool = False) -> None:
