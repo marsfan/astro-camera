@@ -205,4 +205,4 @@ def server_main(camera: CameraBase, *, debug: bool = False) -> None:
 
     """
     Server(camera)
-    nicegui.ui.run(reload=debug, show=False)
+    nicegui.ui.run(reload=debug, show=False, dark=True)
