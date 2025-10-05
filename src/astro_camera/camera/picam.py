@@ -145,7 +145,9 @@ class PiCamera(CameraBase):
         # FIXME: Need a way to indicate this on the UI.
         # UI probably needs a "current values" readout.
         preview_controls = deepcopy(controls)
-        preview_controls["ExposureTime"] = min(controls["ExposureTime"], 0.2)
+        if "ExposureTime" in controls:
+            preview_controls["ExposureTime"] = min(
+                controls["ExposureTime"], 0.2)
 
         self._picam2.set_controls(self._cam_controls)
 
