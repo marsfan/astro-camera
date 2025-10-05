@@ -204,8 +204,12 @@ class Server:
 
     async def debug(self) -> None:
         """Print camera information to console."""
-        print(self._camera.get_controls())
-        print(self._camera.get_metadata())
+        print("Camera Controls:")
+        for key, value in self._camera.get_controls().items():
+            print(f"\t{key}:\t{value}")
+        print("Camera Metadata:")
+        for key, value in self._camera.get_metadata().items():
+            print(f"\t{key}:\t{value}")
 
     def update_image(
             self,
