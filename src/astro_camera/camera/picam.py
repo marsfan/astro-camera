@@ -68,16 +68,10 @@ class PiCamera(CameraBase):
                 * Image in DNG
 
         """
-        # Copy over metadata from preview mode that we want.
-        controls = {}
-        controls["ExposureTime"] = self._cam_controls["ExposureTime"]
-        controls["AnalogueGain"] = self._cam_controls["AnalogueGain"]
-        controls["AeEnable"] = self._cam_controls["AeEnable"]
-        controls["ExposureValue"] = self._cam_controls["ExposureValue"]
 
         # Create config for high res photo
         capture_config = self._picam2.create_still_configuration(
-            raw={}, display=None, controls=controls)
+            raw={}, display=None, controls=self._cam_controls)
 
         # Stop the encoder to prevent crashes
         # See https://forums.raspberrypi.com/viewtopic.php?t=354226
