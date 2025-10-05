@@ -1,0 +1,27 @@
+# This is a sample nmcli connection file for creating a access point
+# on a Raspberry Pi. It will create an AP with both the SSID and pasword
+# as "astrocam", and an ip address off 192.168.4.1
+# It must be placed in /etc/NetworkManager/system-connections
+[connection]
+id=astrocam
+type=wifi
+interface-name=wlan0
+
+[wifi]
+band=bg
+mode=ap
+ssid=astrocam
+
+[wifi-security]
+key-mgmt=wpa-psk
+psk=astrocam
+
+[ipv4]
+address1=192.168.4.1/24
+method=shared
+
+[ipv6]
+addr-gen-mode=default
+method=disabled
+
+[proxy]
