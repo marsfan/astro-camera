@@ -27,7 +27,7 @@ class Server:
 
         self.ev = 0.0
         self.exposure = 0.0125  # 1/8 second
-        self.gain = 1.0
+        self.gain = 8.0
         self.ae_enable = True
 
         self.current_exposure = 0.0125
