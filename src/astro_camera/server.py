@@ -44,7 +44,8 @@ class Server:
         # we have to embed decorated functions inside this one
         # in order to allow access to class members
 
-        # FIXME: Despite using async/await, this can still lag the webui. Need to fix
+        # FIXME: Despite using async/await, this can still lag the webui.
+        # Need to fix
         @nicegui.app.get("/video/frame")
         async def grab_frame() -> fastapi.Response:
             """Grab a single frame from the camera and put it on the UI."""
@@ -91,7 +92,7 @@ class Server:
                 nicegui.ui.label().bind_text_from(
                     self,
                     "current_exposure",
-                    backward=lambda v: f"Current Exposure Time: {v:0.1f}"
+                    backward=lambda v: f"Current Exposure Time: {v:0.1f}",
                 )
             with nicegui.ui.row():
                 nicegui.ui.number(label="Gain").bind_enabled_from(
@@ -104,7 +105,7 @@ class Server:
                 nicegui.ui.label().bind_text_from(
                     self,
                     "current_gain",
-                    backward=lambda v: f"Current Gain: {v:.1f}"
+                    backward=lambda v: f"Current Gain: {v:.1f}",
                 )
             with nicegui.ui.row().classes("w-full no-wrap"):
                 nicegui.ui.slider(

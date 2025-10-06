@@ -27,11 +27,16 @@ class OpenCVWebcam(CameraBase):
 
         """
         rc, img = self._capture.read()
+        if not rc:
+            raise RuntimeError("Failed to read frame.")
+
         # Internally, the image array is height X width.
         # But then the resize function expects us to provide width X height
         height, width, _ = img.shape
         img = cv2.resize(img, (640, int(640 / width * height)))
         rc, frame = cv2.imencode(".jpg", img)
+        if not rc:
+            raise RuntimeError("Failed to encode frame.")
         return bytes(frame)
 
     def take_photo(self) -> tuple[dict[str, Any], bytes, bytes]:
@@ -47,7 +52,12 @@ class OpenCVWebcam(CameraBase):
         # FIXME: Need to figure out how to encode DNG. Seems OpenCV
         # Does not have that by default.
         rc, img = self._capture.read()
+        if not rc:
+            raise RuntimeError("Failed to read frame.")
+
         rc, jpg = cv2.imencode(".jpg", img)
+        if not rc:
+            raise RuntimeError("Failed to encode frame.")
         # FIXME: Include image metadata.
 
         data: dict[str, Any] = {
@@ -121,10 +131,11 @@ class OpenCVWebcam(CameraBase):
     def set_auto_exposure(self, ae: bool) -> None:
         """Enable/Disable auto-exposure.
 
-        Arguments:
-            ae: Whether or not to enable auto-exposure
+        # Arguments:
+        #     ae: Whether or not to enable auto-exposure
 
         """
+        raise ValueError("ABC")
 
     def get_exposure_time(self) -> float:
         """Get the exposure time.

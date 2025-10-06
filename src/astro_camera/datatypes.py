@@ -207,7 +207,7 @@ class CameraControls(TypedDict):
     """
 
     FrameDurationLimits: Any  # TODO: consult the camera_controls property
-    """Minimum and maximum time (in us) that the sensor can take to deliver a frame."""
+    """Min and Max time (in us) that the sensor can take to deliver a frame."""
 
     HdrChannel: controls.HdrChannelEnum
     """Which HDR Channel the current frame represents. Read Only."""
@@ -248,10 +248,14 @@ class CameraControls(TypedDict):
     """
 
     ScalerCrop: Rectangle
-    """The portion of the image received from the sensor that is saved as an image."""
+    """The portion of the image received from the sensor that will be saved."""
 
     SensorTimestamp: int
-    """Time the frame was produced by the sensor in nanoseconds since boot. Read only."""
+    """Time the frame was produced by the sensor in nanoseconds since boot.
+
+    This option is read only.
+
+    """
 
     SensorBlackLevels: tuple[int, int, int, int]
     """The black levels of the raw sensor image. Read Only."""

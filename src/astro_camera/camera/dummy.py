@@ -18,8 +18,12 @@ class DummyCamera(CameraBase):
         """Initialize camera."""
         self._video = cv2.VideoCapture("test_video.mp4")
         rc, img = self._video.read()
+        if not rc:
+            raise RuntimeError("Reading video frame failed")
 
         rc, self._last_frame = cv2.imencode(".jpg", img)
+        if not rc:
+            raise ValueError("Encoding frame failed.")
 
         self._metadata = {
             "ExposureTime": 0.0,

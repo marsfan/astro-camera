@@ -164,7 +164,7 @@ class PiCamera(CameraBase):
         # https://forums.raspberrypi.com/viewtopic.php?t=291474
         self._cam_controls["FrameDurationLimits"] = (
             0,
-            controls["ExposureTime"] + 1000
+            controls["ExposureTime"] + 1000,
         )
 
         # Setting preview controls, we want to clamp exposure time to
@@ -175,11 +175,11 @@ class PiCamera(CameraBase):
         if "ExposureTime" in controls:
             preview_controls["ExposureTime"] = min(
                 controls["ExposureTime"],
-                200000
+                200000,
             )
             preview_controls["FrameDurationLimits"] = (
                 0,
-                controls["ExposureTime"] + 1000
+                controls["ExposureTime"] + 1000,
             )
 
         self._picam2.set_controls(preview_controls)
