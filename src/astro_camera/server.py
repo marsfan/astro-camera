@@ -57,7 +57,7 @@ class Server:
             return fastapi.Response(content=frame, media_type="image/jpeg")
 
         @nicegui.ui.page("/", title="Astro Camera Control")
-        def root_page() -> None:
+        async def root_page() -> None:
             """Create top level (i.e. root) page."""
             # For non-flickering image updates and automatic bandwidth
             # adaptation an interactive image is much better than `ui.image()`.
