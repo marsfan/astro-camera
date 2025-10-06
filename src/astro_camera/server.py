@@ -14,6 +14,7 @@ from typing import Any
 
 import fastapi
 import nicegui
+import asyncio
 
 from .camera import CameraBase
 
@@ -186,7 +187,7 @@ class Server:
         Path(f"{filename}.dng").write_bytes(dng_bytes)
         Path(f"{filename}.metadata.json").write_text(
             json.dumps(metadata, indent=4),
-                "UTF-8",
+            "UTF-8",
         )
 
     async def set_camera_props(self) -> None:
@@ -243,6 +244,12 @@ class Server:
         # self.current_ev = metadata["ExposureValue"]
 
 
+def report_slow() -> None:
+    loop = asyncio.get_running_loop()
+    loop.set_debug(True)
+    loop.slow_callback_duration = 0.05
+
+
 def server_main(camera: CameraBase, *, debug: bool = False) -> None:
     """Run the webui server.
 
@@ -257,5 +264,7 @@ def server_main(camera: CameraBase, *, debug: bool = False) -> None:
 
     """
     nicegui.app.on_startup(camera.initialize_hw)
+    if debug:
+        nicegui.app.on_startup(report_slow)
     Server(camera)
     nicegui.ui.run(reload=debug, show=False, dark=True)
