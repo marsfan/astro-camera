@@ -50,3 +50,9 @@ ignore = [
     "FBT001"    # Boolean positional arguments are OK
 
 ]
+
+[tool.mypy]
+follow_untyped_imports = true
+strict = true
+# Need to allow this for now as picamera2 is not fully typed
+disallow_untyped_calls = false
