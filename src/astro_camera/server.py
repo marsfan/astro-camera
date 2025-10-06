@@ -23,7 +23,7 @@ class Server:
 
     def __init__(self, camera: CameraBase) -> None:
         """Initialize server."""
-        self._camera = camera()
+        self._camera = camera
 
         self.ev = 0.0
         self.exposure = 0.0125  # 1/8 second
@@ -244,5 +244,6 @@ def server_main(camera: CameraBase, *, debug: bool = False) -> None:
             files are modified, and auto-open the webpage on launch.
 
     """
-    nicegui.app.on_startup(lambda: Server(camera))
+    nicegui.app.on_startup(camera.initialize_hw)
+    Server(camera)
     nicegui.ui.run(reload=debug, show=False, dark=True)

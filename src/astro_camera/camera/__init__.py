@@ -3,7 +3,8 @@
 """Base module for all camera drivers."""
 
 from abc import ABC, abstractmethod
-from typing import Any
+from types import TracebackType
+from typing import Any, Self
 
 
 class CameraBase(ABC):
@@ -11,7 +12,49 @@ class CameraBase(ABC):
 
     @abstractmethod
     def __init__(self) -> None:
-        """Initialize camera."""
+        """Initialize instance."""
+
+    def __enter__(self) -> Self:
+        """Enter context manager.
+
+        Returns:
+            The instance itself.
+        """
+        self.initialize_hw()
+        return self
+
+    def __exit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
+        """Exit the context manager.
+
+        Arguments:
+            _exc_type: Type of exception raised inside context
+            _exc_value: The exception raised inside the context
+            _traceback: The traceback for the raised exception
+
+        """
+        self.close()
+
+    @abstractmethod
+    def initialize_hw(self) -> None:
+        """Initialize camera hardware.
+
+        This function should handle any hardware initialization that
+        should only be done once.
+
+        Initializing the camera separately from the class is necessary
+        as the web UI will execute the initializer twice when
+        hot-reloading is enabled.
+
+        """
+
+    @abstractmethod
+    def close(self) -> None:
+        """Shut down camera and free hardware resources."""
 
     @abstractmethod
     def get_frame(self) -> bytes:
@@ -135,7 +178,3 @@ class CameraBase(ABC):
             Whether or not auto-exposure is enabled
 
         """
-
-    @abstractmethod
-    def close(self) -> None:
-        """Shut down camera."""

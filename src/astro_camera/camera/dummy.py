@@ -35,6 +35,16 @@ class DummyCamera(CameraBase):
         }
         self._last_time = monotonic()
 
+    def initialize_hw(self) -> None:
+        """Initialize camera hardware.
+
+        Since this is a dummy class that does not access hardware,
+        there is nothing to do here, but we need to implement it as
+        the method is abstract in the base class.
+
+        """
+        return super().initialize_hw()
+
     def _update_frame(self) -> None:
         # if (monotonic() - self._last_time) > (1/24):
         rc, img = self._video.read()

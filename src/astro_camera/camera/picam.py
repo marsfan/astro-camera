@@ -51,17 +51,19 @@ class PiCamera(CameraBase):
             "AeEnable": True,
             "ExposureValue": 0.0,
         }
-        self._picam2 = Picamera2()
+        self._preview_config: dict[str, Any] = {}
+        self._picam2: Picamera2 | None = None
 
+        self._output = StreamingOutput()
+
+    def initialize_hw(self) -> None:
+        """Initialize the camera hardware."""
+        self._picam2 = Picamera2()
         self._preview_config = self._picam2.create_video_configuration(
             main={"size": (640, 480)},
             controls=self._cam_controls,
         )
-
         self._picam2.configure(self._preview_config)
-
-        self._output = StreamingOutput()
-
         self._picam2.start_recording(MJPEGEncoder(), FileOutput(self._output))
 
     def get_frame(self) -> bytes:
@@ -92,6 +94,8 @@ class PiCamera(CameraBase):
                 * Image in DNG
 
         """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
         # Create config for high res photo
         capture_config = self._picam2.create_still_configuration(
             raw={}, display=None, controls=self._cam_controls)
@@ -138,6 +142,8 @@ class PiCamera(CameraBase):
             Camera metadata.
 
         """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
         return self._picam2.capture_metadata()
 
     def get_controls(self) -> dict[str, Any]:
@@ -147,6 +153,8 @@ class PiCamera(CameraBase):
             Camera Controls
 
         """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
         return self._picam2.camera_controls
 
     def set_controls(self, controls: dict[str, Any]) -> None:
@@ -156,6 +164,8 @@ class PiCamera(CameraBase):
             controls: The camera controls to set.
 
         """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
         self._cam_controls = controls
 
         # We need to change controls to allow for frame to take
@@ -260,4 +270,6 @@ class PiCamera(CameraBase):
 
     def close(self) -> None:
         """Shut down camera."""
-        self._picam2.stop_recording()
+        if self._picam2:
+            self._picam2.stop_recording()
+            self._picam2.close()

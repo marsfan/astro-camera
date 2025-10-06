@@ -3,10 +3,14 @@
 """Command line interface for the program."""
 from argparse import ArgumentParser
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from .camera.dummy import DummyCamera
 from .camera.opencv_webcam import OpenCVWebcam
 from .server import server_main
+
+if TYPE_CHECKING:
+    from .camera import CameraBase
 
 try:
     from .camera.picam import PiCamera
@@ -56,17 +60,18 @@ def main(
     # have hardware acquisition as a separate method that the on_startup()
     # can call.
     # This will also help with converting cameras to use context manager
+    camera: CameraBase
     if args.camera == "picam":
         if PiCamera is None:
             raise RuntimeError(
                 "picamera2 not found. Program is either not running on a "
                 "Raspberry Pi, or the picamera2 module is not installed.",
             )
-        camera = PiCamera
+        camera = PiCamera()
     elif args.camera == "webcam":
-        camera = OpenCVWebcam
+        camera = OpenCVWebcam()
     else:
-        camera = DummyCamera
+        camera = DummyCamera()
 
     if args.tool == "webui":
         server_main(camera, debug=webui_debug)

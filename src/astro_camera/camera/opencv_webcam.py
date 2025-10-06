@@ -17,6 +17,10 @@ class OpenCVWebcam(CameraBase):
 
     def __init__(self) -> None:
         """Initialize camera."""
+        self._capture: cv2.VideoCapture | None = None
+
+    def initialize_hw(self) -> None:
+        """Initialize the camera hardware."""
         self._capture = cv2.VideoCapture(0)
 
     def get_frame(self) -> bytes:
@@ -26,6 +30,8 @@ class OpenCVWebcam(CameraBase):
             Single frame for display.
 
         """
+        if self._capture is None:
+            raise ValueError("Camera HW has not been initialized.")
         rc, img = self._capture.read()
         if not rc:
             raise RuntimeError("Failed to read frame.")
@@ -49,6 +55,8 @@ class OpenCVWebcam(CameraBase):
                 * Image in DNG
 
         """
+        if self._capture is None:
+            raise ValueError("Camera HW has not been initialized.")
         # FIXME: Need to figure out how to encode DNG. Seems OpenCV
         # Does not have that by default.
         rc, img = self._capture.read()
@@ -179,4 +187,5 @@ class OpenCVWebcam(CameraBase):
 
     def close(self) -> None:
         """Shut down camera."""
-        self._capture.release()
+        if self._capture is not None:
+            self._capture.release()
