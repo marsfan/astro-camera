@@ -172,10 +172,16 @@ class PiCamera(CameraBase):
         # longer than default. If we don't change this, controls will
         # be locked at lower value than we specified.
         # https://forums.raspberrypi.com/viewtopic.php?t=291474
-        self._cam_controls["FrameDurationLimits"] = (
-            0,
-            controls["ExposureTime"] + 1000,
-        )
+        if "ExposureTime" in self._cam_controls:
+            self._cam_controls["FrameDurationLimits"] = (
+                0,
+                controls["ExposureTime"] + 1000,
+            )
+        else:
+            self._cam_controls["FrameDurationLimits"] = (
+                0,
+                1000000,
+            )
 
         # Setting preview controls, we want to clamp exposure time to
         # no more than 1/5 sec to maintain a useable framerate
