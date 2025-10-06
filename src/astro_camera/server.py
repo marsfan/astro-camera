@@ -160,21 +160,33 @@ class Server:
 
     async def take_photo(self) -> None:
         """Take a photo with the camera, and save the photo on disk."""
+        # camera_data, jpg_photo, dng_photo = await nicegui.run.io_bound(self.take, self._camera)
+        # FIXME: Taking the photo is CPU bound, but we can't pickle the camera class
+        # due to unpickeable libcamera stuff. Need to figure this out
         camera_data, jpg_photo, dng_photo = self._camera.take_photo()
+        await nicegui.run.io_bound(self.write_photos, jpg_photo, dng_photo, camera_data)
 
+    # Making this static so that we can await it without needing to pickle full
+    # class if changed to use cpu_bound
+    # See https://github.com/zauberzeug/nicegui/discussions/2221#discussioncomment-7920864
+    @staticmethod
+    def write_photos(
+        jpg_bytes: bytes,
+        dng_bytes: bytes,
+        metadata: dict[str, Any]
+    ) -> None:
+        """Save the taken image.
+
+        Arguments:
+            jpg_bytes: The bytes to save for the JPG photo.
+
+        """
         filename = f"IMG_{datetime.isoformat(datetime.now(UTC))}".replace(":", "_")  # noqa: E501
-        # TODO: Can we await all three (asyncio.gather maybe?)
-        await nicegui.run.io_bound(
-            lambda: Path(f"{filename}.jpg").write_bytes(jpg_photo),
-        )
-        await nicegui.run.io_bound(
-            lambda: Path(f"{filename}.dng").write_bytes(dng_photo),
-        )
-        await nicegui.run.io_bound(
-            lambda: Path(f"{filename}.metadata.json").write_text(
-                json.dumps(camera_data, indent=4),
+        Path(f"{filename}.jpg").write_bytes(jpg_bytes)
+        Path(f"{filename}.dng").write_bytes(dng_bytes)
+        Path(f"{filename}.metadata.json").write_text(
+            json.dumps(metadata, indent=4),
                 "UTF-8",
-            ),
         )
 
     async def set_camera_props(self) -> None:
