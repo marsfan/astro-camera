@@ -43,7 +43,6 @@ class DummyCamera(CameraBase):
         the method is abstract in the base class.
 
         """
-        return super().initialize_hw()
 
     def _update_frame(self) -> None:
         # if (monotonic() - self._last_time) > (1/24):

@@ -15,7 +15,14 @@ if TYPE_CHECKING:
 try:
     from .camera.picam import PiCamera
 except ImportError:
-    PiCamera = None
+    # If the PiCamera module fails to load, we are probably running
+    # on non-rpi hardware. If the user requests using RPI camera
+    # hardware, we will later raise an exception.
+    # Suppressions needed here because mypy does handle the
+    # use of setting an import's type
+    # FIXME: Can we move this checking into the PiCamera module
+    # instead, so the error is raised on construction of instance?
+    PiCamera = None  # type: ignore[assignment,misc]
 
 
 def main(
