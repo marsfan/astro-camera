@@ -3,14 +3,10 @@
 """Command line interface for the program."""
 from argparse import ArgumentParser
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 from .camera.dummy import DummyCamera
 from .camera.opencv_webcam import OpenCVWebcam
 from .server import server_main
-
-if TYPE_CHECKING:
-    from .camera import CameraBase
 
 try:
     from .camera.picam import PiCamera

@@ -133,6 +133,8 @@ class OpenCVWebcam(CameraBase):
             Exposure Time
 
         """
+        # FIXME: Actually read this
+        return 0.0
 
     def get_gain(self) -> float:
         """Get sensor gain.
@@ -141,6 +143,8 @@ class OpenCVWebcam(CameraBase):
             Sensor Gain
 
         """
+        # FIXME: Actually read this
+        return 0.0
 
     def get_ev(self) -> float:
         """Get sensor exposure compensation.
@@ -149,6 +153,8 @@ class OpenCVWebcam(CameraBase):
             Exposure Compensation
 
         """
+        # FIXME: Actually read this
+        return 0.0
 
     def get_auto_exposure(self) -> bool:
         """Get whether or not auto-exposure is enabled.
@@ -157,6 +163,8 @@ class OpenCVWebcam(CameraBase):
             Whether or not auto-exposure is enabled
 
         """
+        # FIXME: Actually read this
+        return True
 
     def close(self) -> None:
         """Shut down camera."""

@@ -2,26 +2,42 @@
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via PiCamera2."""
 
+from collections.abc import Buffer
 from copy import deepcopy
 from io import BufferedIOBase, BytesIO
 from threading import Condition
+from typing import Any
 
-from picamera2 import Picamera2
-from picamera2.encoders import MJPEGEncoder
-from picamera2.outputs import FileOutput
+from picamera2.encoders import MJPEGEncoder  # type: ignore[attr-defined]
+from picamera2.outputs.fileoutput import FileOutput
+from picamera2.picamera2 import Picamera2
 
 from . import CameraBase
 
 
 class StreamingOutput(BufferedIOBase):
+    """Simulated Buffered IO to write the frames to as they are encoded."""
+
     def __init__(self) -> None:
-        self.frame = None
+        """Initialize the writer."""
+        self.frame: bytes | None = None
         self.condition = Condition()
 
-    def write(self, buf: bytes | None) -> None:
+    def write(self, buf: Buffer) -> int:
+        """Write the bytes to the frame.
+
+        Arguments:
+            buf: The buffer to write
+
+        Returns:
+            Number of written bytes
+
+        """
         with self.condition:
-            self.frame = buf
+
+            self.frame = BytesIO(buf).read()
             self.condition.notify_all()
+            return len(self.frame)
 
 
 class PiCamera(CameraBase):
@@ -31,7 +47,10 @@ class PiCamera(CameraBase):
         """Initialize Camera."""
         # FIXME: Support initialization args for controls.
         # and preview config (namely size)
-        self._cam_controls = {"AeEnable": True, "ExposureValue": 0.0}
+        self._cam_controls: dict[str, Any] = {
+            "AeEnable": True,
+            "ExposureValue": 0.0,
+        }
         self._picam2 = Picamera2()
 
         self._preview_config = self._picam2.create_video_configuration(
@@ -51,14 +70,19 @@ class PiCamera(CameraBase):
         Returns:
             Single frame for display.
 
+        Raises:
+            ValueError: Raised if the frame was none on return.
+
         """
         # TODO: Ensure we are using hw encoder
         # https://github.com/raspberrypi/picamera2/issues/752
         with self._output.condition:
             self._output.condition.wait()
+            if self._output.frame is None:
+                raise ValueError("Frame was None")
             return self._output.frame
 
-    def take_photo(self) -> tuple[dict, bytes, bytes]:
+    def take_photo(self) -> tuple[dict[str, Any], bytes, bytes]:
         """Take a single high-resolution photo.
 
         Returns:
@@ -68,7 +92,6 @@ class PiCamera(CameraBase):
                 * Image in DNG
 
         """
-
         # Create config for high res photo
         capture_config = self._picam2.create_still_configuration(
             raw={}, display=None, controls=self._cam_controls)
@@ -117,7 +140,7 @@ class PiCamera(CameraBase):
         """
         return self._picam2.capture_metadata()
 
-    def get_controls(self) -> dict[str, float]:
+    def get_controls(self) -> dict[str, Any]:
         """Get camera controls.
 
         Returns:
@@ -126,7 +149,7 @@ class PiCamera(CameraBase):
         """
         return self._picam2.camera_controls
 
-    def set_controls(self, controls: dict[str, bool | float]) -> None:
+    def set_controls(self, controls: dict[str, Any]) -> None:
         """Set camera controls.
 
         Arguments:
@@ -222,6 +245,7 @@ class PiCamera(CameraBase):
             Exposure Compensation
 
         """
+        assert isinstance(self._cam_controls["ExposureValue"], float)
         return self._cam_controls["ExposureValue"]
 
     def get_auto_exposure(self) -> bool:
@@ -231,6 +255,7 @@ class PiCamera(CameraBase):
             Whether or not auto-exposure is enabled
 
         """
+        assert isinstance(self._cam_controls["AeEnable"], bool)
         return self._cam_controls["AeEnable"]
 
     def close(self) -> None:
