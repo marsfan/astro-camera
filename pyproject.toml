@@ -32,9 +32,12 @@ astro-camera = "astro_camera.__main__:main"
 reportMissingTypeStubs = false
 
 [tool.ruff]
-select = ["ALL"]
 target-version = "py311" # Debian 12 comes with Python 3.11, so consider that minimum target
 line-length = 79
+
+
+[tool.ruff.lint]
+select = ["ALL"]
 ignore = [
     "FIX001",   # Don't want to show warnings for FIXME comments
     "FIX002",   # Don't want to show warnings for TODO comments
@@ -47,9 +50,11 @@ ignore = [
     "TRY003",   # Long messages in exception are ok
     "EM101",    # String literal in exception is OK
     "T201",     # Print statements in code are OK
-    "FBT001"    # Boolean positional arguments are OK
-
+    "FBT001",    # Boolean positional arguments are OK
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.mypy]
 follow_untyped_imports = true
