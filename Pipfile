@@ -2,11 +2,10 @@
 url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
-
-
 # 32 bit Raspberry Pi OS tends to not have wheels in PyPi, so we
 # can use the piwheels project instead to speed up installs on that
 # platform.
+
 [[source]]
 url =" https://www.piwheels.org/simple"
 verify_ssl = true
@@ -26,6 +25,8 @@ build = "*"
 mypy = "*"
 ruff = "*"
 pylint = "*"
+viztracer = "*"
+orjson = "*"
 
 [requires]
 python_version = "3.13"
