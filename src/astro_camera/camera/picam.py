@@ -107,6 +107,7 @@ class PiCamera(CameraBase):
         # Take the photo
         # FIXME: After it switches back, controls are defaults, not last
         # user specified values
+        # FIXME: Function docstring say to try using switch_mode_capture_request_and_stop instead
         request = self._picam2.switch_mode_and_capture_request(
             capture_config,
         )

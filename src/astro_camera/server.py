@@ -162,9 +162,11 @@ class Server:
     async def take_photo(self) -> None:
         """Take a photo with the camera, and save the photo on disk."""
         # camera_data, jpg_photo, dng_photo = await nicegui.run.io_bound(self.take, self._camera)
-        # FIXME: Taking the photo is CPU bound, but we can't pickle the camera class
+        # FIXME: Taking the photo and encoding to DNG is CPU bound, but we can't pickle the camera class
         # due to unpickeable libcamera stuff. Need to figure this out
-        camera_data, jpg_photo, dng_photo = self._camera.take_photo()
+        # Either maybe we should push all camera to separate thread and use a loopback
+        # or leverage some of the async stuff built into the module github.com/raspberrypi/picamera2/issues/714
+        camera_data, jpg_photo, dng_photo = await nicegui.run.io_bound(self._camera.take_photo)
         await nicegui.run.io_bound(self.write_photos, jpg_photo, dng_photo, camera_data)
 
     # Making this static so that we can await it without needing to pickle full
