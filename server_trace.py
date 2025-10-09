@@ -27,7 +27,7 @@ def main() -> None:
     tracer = VizTracer(
         tracer_entries=10000000,
         minimize_memory=True,
-        log_async=True
+        # log_async=True
     )
 
     if "picamera" in sys.argv:
