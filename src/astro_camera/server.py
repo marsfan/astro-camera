@@ -182,6 +182,8 @@ class Server:
 
         Arguments:
             jpg_bytes: The bytes to save for the JPG photo.
+            dng_bytes: The bytes to save as a DNG file
+            metadata: Dictionary of the metadata to save to a JSON.
 
         """
         filename = f"IMG_{datetime.isoformat(datetime.now(UTC))}".replace(":", "_")  # noqa: E501
