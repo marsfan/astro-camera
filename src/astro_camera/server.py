@@ -4,6 +4,7 @@
 
 # This is adapted from the nicegui_webcam sample to understand the camera
 # logic
+import asyncio
 import json
 import signal
 import time
@@ -14,7 +15,6 @@ from typing import Any
 
 import fastapi
 import nicegui
-import asyncio
 
 from .camera import CameraBase
 
