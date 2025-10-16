@@ -248,10 +248,22 @@ class Server:
         # self.current_ev = metadata["ExposureValue"]
 
 
-def report_slow() -> None:
+def setup_debug() -> None:
+    """Enable various parameters to help debug asyncio."""
     loop = asyncio.get_running_loop()
+
+    # Print out to console any time a task takes more than 0.05 seconds
+    # to execute
     loop.set_debug(True)
     loop.slow_callback_duration = 0.05
+
+    # Set all non-picamera2 logs to DEBUG
+    logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger("picamera2").setLevel(logging.WARNING)
+
+    # Don't suppress some warnings that might be useful to catch
+    warnings.filterwarnings("always", category=ResourceWarning)
+    warnings.filterwarnings("always", category=RuntimeWarning)
 
 
 def server_main(camera: CameraBase, *, debug: bool = False) -> None:
@@ -269,6 +281,6 @@ def server_main(camera: CameraBase, *, debug: bool = False) -> None:
     """
     nicegui.app.on_startup(camera.initialize_hw)
     if debug:
-        nicegui.app.on_startup(report_slow)
+        nicegui.app.on_startup(setup_debug)
     Server(camera)
     nicegui.ui.run(reload=debug, show=False, dark=True)
