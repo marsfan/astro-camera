@@ -6,8 +6,10 @@
 # logic
 import asyncio
 import json
+import logging
 import signal
 import time
+import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 from types import FrameType
@@ -22,6 +24,10 @@ from .camera import CameraBase
 class Server:
     """Main web interface for camera control."""
 
+    def count_up(self) -> None:
+        self.counter += 1
+        self.counter %= 100
+
     def __init__(self, camera: CameraBase) -> None:
         """Initialize server."""
         self._camera = camera
@@ -35,6 +41,8 @@ class Server:
         self.current_gain = 0.0
         self.current_ev = 0.0
 
+        self.counter = 0
+
         nicegui.app.on_shutdown(self.cleanup)
         # We also need to disconnect clients when the app is stopped with
         # Ctrl+C, because otherwise they will keep requesting images which lead
@@ -44,6 +52,8 @@ class Server:
         # Sadly, FastAPI does not seem to work on class methods, so
         # we have to embed decorated functions inside this one
         # in order to allow access to class members
+
+        nicegui.app.timer(0.1, callback=self.count_up)
 
         # FIXME: Despite using async/await, this can still lag the webui.
         # Need to fix
@@ -70,12 +80,13 @@ class Server:
             # FIXME: Need to have this outside of a specific page, and we
             # then update a variable all clients read from. That might fix
             # occasional crashes
-            nicegui.ui.timer(
-                interval=0.1,
-                callback=lambda: self.update_image(video_image),
-            )
+            # nicegui.ui.timer(
+            #     interval=0.1,
+            #     callback=lambda: self.update_image(video_image),
+            # )
 
             # Defining the main UI.
+            nicegui.ui.label().bind_text_from(self, "counter")
             nicegui.ui.button("Take Photo", on_click=self.take_photo)
             nicegui.ui.label("Exposure Control").style(
                 "font-size: 20px; font-weight: bold",
@@ -161,12 +172,11 @@ class Server:
 
     async def take_photo(self) -> None:
         """Take a photo with the camera, and save the photo on disk."""
-        # camera_data, jpg_photo, dng_photo = await nicegui.run.io_bound(self.take, self._camera)
         # FIXME: Taking the photo and encoding to DNG is CPU bound, but we can't pickle the camera class
         # due to unpickeable libcamera stuff. Need to figure this out
         # Either maybe we should push all camera to separate thread and use a loopback
         # or leverage some of the async stuff built into the module github.com/raspberrypi/picamera2/issues/714
-        camera_data, jpg_photo, dng_photo = await nicegui.run.io_bound(self._camera.take_photo)
+        camera_data, jpg_photo, dng_photo = await self._camera.take_photo_async()
         await nicegui.run.io_bound(self.write_photos, jpg_photo, dng_photo, camera_data)
 
     # Making this static so that we can await it without needing to pickle full

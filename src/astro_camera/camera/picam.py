@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via PiCamera2."""
 
+import asyncio
 from collections.abc import Buffer
 from copy import deepcopy
 from io import BufferedIOBase, BytesIO
@@ -9,10 +10,28 @@ from threading import Condition
 from typing import Any
 
 from picamera2.encoders import MJPEGEncoder  # type: ignore[attr-defined]
+from picamera2.job import Job
 from picamera2.outputs.fileoutput import FileOutput
 from picamera2.picamera2 import Picamera2
+from picamera2.request import CompletedRequest
 
 from . import CameraBase
+
+
+def _photo_signal(
+        job: Job,
+        loop: asyncio.AbstractEventLoop,
+        future: asyncio.Future,
+) -> None:
+    """Signal function to set a future to indicate that taking a photo is done.
+
+    Arguments:
+        job: The picamera2 job for the photo taken.
+        loop: The asyncio event loop that the future to set is in.
+        future: The future to set the result for.
+
+    """
+    loop.call_soon_threadsafe(future.set_result, "Done")
 
 
 class StreamingOutput(BufferedIOBase):
@@ -84,6 +103,69 @@ class PiCamera(CameraBase):
                 raise ValueError("Frame was None")
             return self._output.frame
 
+    def _prepare_to_take(self) -> dict[str, Any]:
+        """Prepare to take a high resolution photo.
+
+        This will stop the preview encoder and create a still
+        configuration for the capture.
+
+        """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
+        # Create config for high res photo
+        capture_config = self._picam2.create_still_configuration(
+            raw={}, display=None, controls=self._cam_controls)
+        # Stop the encoder to prevent crashes
+        # See https://forums.raspberrypi.com/viewtopic.php?t=354226
+        self._picam2.stop_encoder()
+
+        return capture_config
+
+    def _process_request_and_release(
+        self,
+        request: CompletedRequest,
+    ) -> tuple[dict[str, Any], bytes, bytes]:
+        """Process the request into the output images, and release it, and restart encoder.
+
+        Arguments:
+            request: The request to process
+
+        Returns:
+            Three element tuple:
+                * Image metadata
+                * Image in JPG
+                * Image in DNG
+
+        """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
+        # Create buffers to hold the encoded images
+        dng_buf = BytesIO()
+        jpg_buf = BytesIO()
+
+        # Save the images to the buffers
+        # TODO: Encode bytes.
+        # FIXME: Is there a way to do this without using a BytesIO?
+        request.save("main", jpg_buf, format="jpg")
+        request.save_dng(dng_buf)
+
+        # Built metadata structure
+        data = {
+            "cam_driver": "picamera2",
+            "metadata": request.get_metadata(),
+            # "config": request.config, # FIXME: Get this working # noqa: ERA001,E501
+            "camera_properties": self._picam2.camera_properties,
+        }
+
+        # Restart the encoder
+        # FIXME: Logic to check if its already started?
+        self._picam2.start_encoder(MJPEGEncoder(), FileOutput(self._output))
+
+        # Release the request
+        request.release()
+
+        return data, jpg_buf.getvalue(), dng_buf.getvalue()
+
     def take_photo(self) -> tuple[dict[str, Any], bytes, bytes]:
         """Take a single high-resolution photo.
 
@@ -96,13 +178,8 @@ class PiCamera(CameraBase):
         """
         if not self._picam2:
             raise ValueError("Camera is not initialized.")
-        # Create config for high res photo
-        capture_config = self._picam2.create_still_configuration(
-            raw={}, display=None, controls=self._cam_controls)
 
-        # Stop the encoder to prevent crashes
-        # See https://forums.raspberrypi.com/viewtopic.php?t=354226
-        self._picam2.stop_encoder()
+        capture_config = self._prepare_to_take()
 
         # Take the photo
         # FIXME: After it switches back, controls are defaults, not last
@@ -112,29 +189,42 @@ class PiCamera(CameraBase):
             capture_config,
         )
 
-        # TODO: Encode bytes.
-        # FIXME: Is there a way to do this without using a BytesIO?
-        dng_buf = BytesIO()
-        jpg_buf = BytesIO()
-        request.save("main", jpg_buf, format="jpg")
-        request.save_dng(dng_buf)
-        data = {
-            "cam_driver": "picamera2",
-            "metadata": request.get_metadata(),
-            # "config": request.config, # FIXME: Get this working # noqa: ERA001,E501
-            "camera_properties": self._picam2.camera_properties,
-        }
-        # Rewind buffers so we can dump everything
-        dng_buf.seek(0)
-        jpg_buf.seek(0)
+        return self._process_request_and_release(request)
 
-        # Release request
-        request.release()
+    async def take_photo_async(self) -> tuple[dict[str, Any], bytes, bytes]:
+        """Take a high-resolution photo asynchronously.
 
-        # Restart MJPEG encoder
-        self._picam2.start_encoder(MJPEGEncoder(), FileOutput(self._output))
+        This is the same as :py:meth:`take_photo`, but it takes the photo
+        in an asynchronous manner, so that the function can be awaited
+        until the camera is done capturing. This allows us to prevent
+        blocking other operations in a async event loop.
 
-        return data, jpg_buf.read(), dng_buf.read()
+        Returns:
+            Three element tuple:
+                * Image metadata
+                * Image in JPG
+                * Image in DNG
+
+        """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
+        capture_config = self._prepare_to_take()
+        # Take the photo
+        # FIXME: After it switches back, controls are defaults, not last
+        # user specified values
+        # FIXME: Function docstring say to try using switch_mode_capture_request_and_stop instead
+        loop = asyncio.get_running_loop()
+        photo_done = asyncio.get_running_loop().create_future()
+
+        job = self._picam2.switch_mode_and_capture_request(
+            capture_config,
+            signal_function=lambda j: _photo_signal(j, loop, photo_done),
+        )
+
+        # Wait for the capture to complete, releasing the async loop
+        await photo_done
+
+        return self._process_request_and_release(job.get_result())
 
     def get_metadata(self) -> dict[str, float]:
         """Get camera metadata.
