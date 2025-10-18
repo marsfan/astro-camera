@@ -23,9 +23,11 @@ class OpenCVWebcam(CameraBase):
         """Initialize the camera hardware."""
         # FIXME: Need a way to select the correct index.
         # On laptop, built in webcam tends to be index 0,
-        # on RPI5, USB webcam is 8 (earlier indices are for CSI cameras)
-        # Look at the cv2_enumerate_cameras tool to help with this?
+        # on RPI5, order seems to jump around.
         self._capture = cv2.VideoCapture(0)
+
+        # Perform one capture to start up the webcam.
+        self._capture.read()
 
     def get_frame(self) -> bytes:
         """Get a single frame for real-time streaming.
