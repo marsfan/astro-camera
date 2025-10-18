@@ -19,9 +19,9 @@ from . import CameraBase
 
 
 def _photo_signal(
-        job: Job,
-        loop: asyncio.AbstractEventLoop,
-        future: asyncio.Future,
+    job: Job,
+    loop: asyncio.AbstractEventLoop,
+    future: asyncio.Future,
 ) -> None:
     """Signal function to set a future to indicate that taking a photo is done.
 
@@ -53,7 +53,6 @@ class StreamingOutput(BufferedIOBase):
 
         """
         with self.condition:
-
             self.frame = BytesIO(buf).read()
             self.condition.notify_all()
             return len(self.frame)
@@ -114,7 +113,10 @@ class PiCamera(CameraBase):
             raise ValueError("Camera is not initialized.")
         # Create config for high res photo
         capture_config = self._picam2.create_still_configuration(
-            raw={}, display=None, controls=self._cam_controls)
+            raw={},
+            display=None,
+            controls=self._cam_controls,
+        )
         # Stop the encoder to prevent crashes
         # See https://forums.raspberrypi.com/viewtopic.php?t=354226
         self._picam2.stop_encoder()
@@ -236,6 +238,24 @@ class PiCamera(CameraBase):
         if not self._picam2:
             raise ValueError("Camera is not initialized.")
         return self._picam2.capture_metadata()
+
+    async def get_metadata_async(self) -> dict[str, float]:
+        """Get camera metadata with async support.
+
+        Returns:
+            Camera metadata.
+
+        """
+        if not self._picam2:
+            raise ValueError("Camera is not initialized.")
+        loop = asyncio.get_running_loop()
+        done = loop.create_future()
+        job = self._picam2.capture_metadata(
+            wait=False,
+            signal_function=lambda j: _photo_signal(j, loop, done),
+        )
+        await done
+        return job.get_result()
 
     def get_controls(self) -> dict[str, Any]:
         """Get camera controls.

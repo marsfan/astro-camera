@@ -80,10 +80,10 @@ class Server:
             # FIXME: Need to have this outside of a specific page, and we
             # then update a variable all clients read from. That might fix
             # occasional crashes
-            # nicegui.ui.timer(
-            #     interval=0.1,
-            #     callback=lambda: self.update_image(video_image),
-            # )
+            nicegui.ui.timer(
+                interval=0.1,
+                callback=lambda: self.update_image(video_image),
+            )
 
             # Defining the main UI.
             nicegui.ui.label().bind_text_from(self, "counter")
@@ -240,9 +240,9 @@ class Server:
         for key, value in self._camera.get_metadata().items():
             print(f"\t{key}:\t{value}")
 
-    def update_image(
-            self,
-            video_image: nicegui.ui.interactive_image,
+    async def update_image(
+        self,
+        video_image: nicegui.ui.interactive_image,
     ) -> None:
         """Update the data from the camera on the web UI.
 
@@ -251,7 +251,7 @@ class Server:
 
         """
         video_image.set_source(f"/video/frame?{time.time()}")
-        metadata = self._camera.get_metadata()
+        metadata = await self._camera.get_metadata_async()
         self.current_exposure = metadata["ExposureTime"]
         self.current_gain = metadata["AnalogueGain"]
         # FIXME: Not in metadata, where do I get this?
