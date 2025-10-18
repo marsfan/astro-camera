@@ -27,6 +27,7 @@ ruff = "*"
 pylint = "*"
 viztracer = "*"
 orjson = "*"
+cv2-enumerate-cameras = "*"
 
 [requires]
 python_version = "3.13"
