@@ -81,8 +81,29 @@ class CameraBase(ABC):
         """
 
     @abstractmethod
+    async def take_photo_async(self) -> tuple[dict[str, Any], bytes, bytes]:
+        """Take a single high-resolution photo asynchronously.
+
+        Returns:
+            Three element tuple:
+                * Image metadata
+                * Image in JPG
+                * Image in DNG
+
+        """
+
+    @abstractmethod
     def get_metadata(self) -> dict[str, float]:
         """Get camera metadata.
+
+        Returns:
+            Camera metadata.
+
+        """
+
+    @abstractmethod
+    async def get_metadata_async(self) -> dict[str, float]:
+        """Get camera metadata asynchronously.
 
         Returns:
             Camera metadata.

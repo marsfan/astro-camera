@@ -8,8 +8,8 @@ import cv2
 from . import CameraBase
 
 # TODO: Context manager suppot
-
 # TODO: Metdata suport, exposure support
+# FIXME: Frame rate for this is really awful. Need to look into it more.
 
 
 class OpenCVWebcam(CameraBase):
@@ -21,6 +21,10 @@ class OpenCVWebcam(CameraBase):
 
     def initialize_hw(self) -> None:
         """Initialize the camera hardware."""
+        # FIXME: Need a way to select the correct index.
+        # On laptop, built in webcam tends to be index 0,
+        # on RPI5, USB webcam is 8 (earlier indices are for CSI cameras)
+        # Look at the cv2_enumerate_cameras tool to help with this?
         self._capture = cv2.VideoCapture(0)
 
     def get_frame(self) -> bytes:
@@ -80,7 +84,56 @@ class OpenCVWebcam(CameraBase):
 
         return data, bytes(jpg), b""
 
+    async def take_photo_async(self) -> tuple[dict[str, Any], bytes, bytes]:
+        """Take a single high-resolution photo.
+
+        Returns:
+            Three element tuple:
+                * Image metadata
+                * Image in JPG
+                * Image in DNG
+
+        """
+        # FIXME: Figure out how to actually make this async
+        if self._capture is None:
+            raise ValueError("Camera HW has not been initialized.")
+        # FIXME: Need to figure out how to encode DNG. Seems OpenCV
+        # Does not have that by default.
+        rc, img = self._capture.read()
+        if not rc:
+            raise RuntimeError("Failed to read frame.")
+
+        rc, jpg = cv2.imencode(".jpg", img)
+        if not rc:
+            raise RuntimeError("Failed to encode frame.")
+        # FIXME: Include image metadata.
+
+        data: dict[str, Any] = {
+            "cam_driver": "cv2",
+            "metadata": self.get_metadata(),
+            # "config": request.config, # FIXME: Get this working # noqa: ERA001,E501
+
+            # FIXME: DO this with OpenCV
+            "camera_properties": {},
+            # "camera_properties": self._picam2.camera_properties
+        }
+
+        return data, bytes(jpg), b""
+
     def get_metadata(self) -> dict[str, float]:
+        """Get camera metadata.
+
+        Returns:
+            Camera Metadata.
+
+        """
+        # FIXME: Figure out how to do this in OpenCV
+        return {
+            "ExposureTime": 0,
+            "AnalogueGain": 0,
+        }
+
+    async def get_metadata_async(self) -> dict[str, float]:
         """Get camera metadata.
 
         Returns:

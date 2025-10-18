@@ -92,7 +92,41 @@ class DummyCamera(CameraBase):
 
         return data, bytes(self._last_frame), b""
 
+    async def take_photo_async(self) -> tuple[dict[str, Any], bytes, bytes]:
+        """Take a single high-resolution photo.
+
+        Returns:
+            Three element tuple:
+                * Image metadata
+                * Image in JPG
+                * Image in DNG
+
+        """
+        # FIXME: Include image metadata.
+        self._update_frame()
+
+        data: dict[str, Any] = {
+            "cam_driver": "cv2",
+            "metadata": self.get_metadata(),
+            # "config": request.config, # FIXME: Get this working # noqa: E501,ERA001
+
+            # FIXME: DO this with OpenCV
+            "camera_properties": {},
+            # "camera_properties": self._picam2.camera_properties
+        }
+
+        return data, bytes(self._last_frame), b""
+
     def get_metadata(self) -> dict[str, float]:
+        """Get camera metadata.
+
+        Returns:
+            Camera metadata.
+
+        """
+        return self._metadata
+
+    async def get_metadata_async(self) -> dict[str, float]:
         """Get camera metadata.
 
         Returns:

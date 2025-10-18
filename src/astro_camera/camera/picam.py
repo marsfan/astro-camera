@@ -96,6 +96,7 @@ class PiCamera(CameraBase):
         """
         # TODO: Ensure we are using hw encoder
         # https://github.com/raspberrypi/picamera2/issues/752
+        # FIXME: Might need to figure out how to make this async as well
         with self._output.condition:
             self._output.condition.wait()
             if self._output.frame is None:
