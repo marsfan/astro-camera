@@ -102,10 +102,13 @@ class CameraThread(Thread):
                 self.frame = scaled_jpg
                 self.image_condition.notify_all()
 
-            # We don't want to run too fast, or the thread will take
-            # up too many resources.
-            # So we sleep enough to get (in theory) 30FPS
-            time.sleep(1/30)
+            # If we ran without a sleep, this thread could take up a lot
+            # of unnecessary CPU resources.
+            # So we are going to sleep for a little bit. This means the
+            # theoretical max frame rate is 100FPS, which is more than
+            # we care about, but its enough to ensure the thread is not
+            # going crazy on CPU use
+            time.sleep(0.01)
 
         # Close camera
         self._capture.release()
