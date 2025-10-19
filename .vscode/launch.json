@@ -14,6 +14,28 @@
                 "-c",
                 "picam"
             ]
+        },
+        {
+            "name": "WebUI Webcam",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "astro_camera",
+            "args": [
+                "webui",
+                "-c",
+                "webcam"
+            ]
+        },
+        {
+            "name": "WebUI Dummy",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "astro_camera",
+            "args": [
+                "webui",
+                "-c",
+                "dummy"
+            ],
         }
     ]
 }

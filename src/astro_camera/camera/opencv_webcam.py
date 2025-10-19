@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via OpenCV."""
-from typing import Any
+import time
+from threading import Condition, Event, Thread
+from typing import TYPE_CHECKING, Any
 
 import cv2
+
+if TYPE_CHECKING:
+    from cv2.typing import MatLike
 
 from . import CameraBase
 
@@ -12,22 +17,111 @@ from . import CameraBase
 # FIXME: Frame rate for this is really awful. Need to look into it more.
 
 
+class CameraThread(Thread):
+    """Thread for reading from the camera."""
+
+    def __init__(self, camera_index: int) -> None:
+        """Initialize the camera, and the thread.
+
+        Thread is not yet started. We have just initialized things.
+        call :py:meth:`start` to start the thread.
+
+        """
+        super().__init__(name="CV2 Webcamera")
+        self._camera_index = camera_index
+        self._capture: cv2.VideoCapture | None = None
+        self.image_condition = Condition()
+        self._running = Event()
+        self.full_photo: None | MatLike = None
+        self.frame: None | MatLike = None
+
+    def run(self) -> None:
+        """Main logic for the thread.
+
+        This should not be called directly. Instead :py:meth:`start`
+        should be called.
+
+        """
+        self._capture = cv2.VideoCapture(self._camera_index)
+
+        # FIXME: Need to have logic to clear the event so we shutdown cleanly
+        self._running.set()
+        while self._running.is_set():
+            rc, img = self._capture.read()
+            if not rc:
+                raise RuntimeError("Failed to read frame.")
+            rc, full_jpg = cv2.imencode(".jpg", img)
+            if not rc:
+                raise RuntimeError("Failed to encode full image.")
+            height, width, _ = img.shape
+            scaled = cv2.resize(
+                img,
+                (640, int(640 / width * height)),
+            )
+            rc, scaled_jpg = cv2.imencode(".jpg", scaled)
+            if not rc:
+                raise RuntimeError("Failed to encode preview image")
+            with self.image_condition:
+                self.full_photo = full_jpg
+                self.frame = scaled_jpg
+                self.image_condition.notify_all()
+
+            # We don't want to run too fast, or the thread will take
+            # up too many resources.
+            # So we sleep enough to get (in theory) 30FPS
+            time.sleep(1/30)
+
+        # Close camera
+        self._capture.release()
+
+    def get_frame(self) -> bytes:
+        """Get a single frame for real-time streaming.
+
+        Returns:
+            Single frame for display.
+
+        Raise:
+            TypeError: Raised if the photo was none when trying to
+                return it.
+
+        """
+        with self.image_condition:
+            self.image_condition.wait()
+            if self.frame is None:
+                raise TypeError("Frame was none")
+            return bytes(self.frame)
+
+    def get_photo(self) -> bytes:
+        """Get the full sized image.
+
+        Returns:
+            Bytes for the JPEG of the full sized image.
+
+        Raise:
+            TypeError: Raised if the photo was none when trying to
+                return it.
+
+        """
+        with self.image_condition:
+            self.image_condition.wait()
+            if self.full_photo is None:
+                raise TypeError("Frame was None")
+            return bytes(self.full_photo)
+
+
 class OpenCVWebcam(CameraBase):
     """Class for manipulating camera via OpenCV."""
 
     def __init__(self) -> None:
         """Initialize camera."""
         self._capture: cv2.VideoCapture | None = None
+        # FIXME: Need a way to select the correct index.
+        # On laptop, built in webcam tends to be index 0,
+        self._camera_thread = CameraThread(0)
 
     def initialize_hw(self) -> None:
         """Initialize the camera hardware."""
-        # FIXME: Need a way to select the correct index.
-        # On laptop, built in webcam tends to be index 0,
-        # on RPI5, order seems to jump around.
-        self._capture = cv2.VideoCapture(0)
-
-        # Perform one capture to start up the webcam.
-        self._capture.read()
+        self._camera_thread.start()
 
     def get_frame(self) -> bytes:
         """Get a single frame for real-time streaming.
@@ -36,20 +130,7 @@ class OpenCVWebcam(CameraBase):
             Single frame for display.
 
         """
-        if self._capture is None:
-            raise ValueError("Camera HW has not been initialized.")
-        rc, img = self._capture.read()
-        if not rc:
-            raise RuntimeError("Failed to read frame.")
-
-        # Internally, the image array is height X width.
-        # But then the resize function expects us to provide width X height
-        height, width, _ = img.shape
-        img = cv2.resize(img, (640, int(640 / width * height)))
-        rc, frame = cv2.imencode(".jpg", img)
-        if not rc:
-            raise RuntimeError("Failed to encode frame.")
-        return bytes(frame)
+        return self._camera_thread.get_frame()
 
     def take_photo(self) -> tuple[dict[str, Any], bytes, bytes]:
         """Take a single high-resolution photo.
@@ -61,19 +142,6 @@ class OpenCVWebcam(CameraBase):
                 * Image in DNG
 
         """
-        if self._capture is None:
-            raise ValueError("Camera HW has not been initialized.")
-        # FIXME: Need to figure out how to encode DNG. Seems OpenCV
-        # Does not have that by default.
-        rc, img = self._capture.read()
-        if not rc:
-            raise RuntimeError("Failed to read frame.")
-
-        rc, jpg = cv2.imencode(".jpg", img)
-        if not rc:
-            raise RuntimeError("Failed to encode frame.")
-        # FIXME: Include image metadata.
-
         data: dict[str, Any] = {
             "cam_driver": "cv2",
             "metadata": self.get_metadata(),
@@ -84,7 +152,9 @@ class OpenCVWebcam(CameraBase):
             # "camera_properties": self._picam2.camera_properties
         }
 
-        return data, bytes(jpg), b""
+        # FIXME: Need to figure out how to encode DNG. Seems OpenCV
+        # Does not have that by default.
+        return data, self._camera_thread.get_photo(), b""
 
     async def take_photo_async(self) -> tuple[dict[str, Any], bytes, bytes]:
         """Take a single high-resolution photo.

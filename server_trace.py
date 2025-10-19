@@ -10,6 +10,7 @@ from astro_camera.server import server_main
 
 try:
     from astro_camera.camera.picam import PiCamera
+    from astro_camera.camera.opencv_webcam import OpenCVWebcam
 except ImportError:
     # If the PiCamera module fails to load, we are probably running
     # on non-rpi hardware. If the user requests using RPI camera
@@ -32,6 +33,8 @@ def main() -> None:
 
     if "picamera" in sys.argv:
         camera = PiCamera()
+    elif "webcam" in sys.argv:
+        camera = OpenCVWebcam()
     else:
         camera = DummyCamera()
     with tracer:
