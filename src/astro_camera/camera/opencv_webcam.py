@@ -4,7 +4,7 @@
 import subprocess
 import sys
 import time
-from threading import Condition, Event, Thread
+from threading import Condition, Event, Thread, current_thread
 from typing import TYPE_CHECKING, Any
 
 import cv2
@@ -80,7 +80,6 @@ class CameraThread(Thread):
                 shell=False,
             )
 
-        # FIXME: Need to have logic to clear the event so we shutdown cleanly
         self._running.set()
         while self._running.is_set():
             rc, img = self._capture.read()
@@ -147,15 +146,29 @@ class CameraThread(Thread):
                 raise TypeError("Frame was None")
             return bytes(self.full_photo)
 
+    def stop(self) -> None:
+        """Tell the thread to stop.
+
+        This clears a flag to cause the thread to stop running.
+
+        If this method is called from a different thread than the
+        the instance it operates on, it will also then join the thread,
+        blocking execution until it has been properly shut down.
+
+        """
+        self._running.clear()
+        if current_thread != self:
+            self.join()
+
 
 class OpenCVWebcam(CameraBase):
     """Class for manipulating camera via OpenCV."""
 
     def __init__(self) -> None:
         """Initialize camera."""
-        self._capture: cv2.VideoCapture | None = None
         # FIXME: Need a way to select the correct index.
         # On laptop, built in webcam tends to be index 0,
+        # Then things jump around a bit on the PI
         self._camera_thread = CameraThread(0)
 
     def initialize_hw(self) -> None:
@@ -181,6 +194,7 @@ class OpenCVWebcam(CameraBase):
                 * Image in DNG
 
         """
+        # FIXME: Look into supporting switching modes like in picam2
         data: dict[str, Any] = {
             "cam_driver": "cv2",
             "metadata": self.get_metadata(),
@@ -205,6 +219,7 @@ class OpenCVWebcam(CameraBase):
                 * Image in DNG
 
         """
+        # FIXME: Look into supporting switching modes like in picam2
         data: dict[str, Any] = {
             "cam_driver": "cv2",
             "metadata": self.get_metadata(),
@@ -339,5 +354,4 @@ class OpenCVWebcam(CameraBase):
 
     def close(self) -> None:
         """Shut down camera."""
-        if self._capture is not None:
-            self._capture.release()
+        self._camera_thread.stop()
