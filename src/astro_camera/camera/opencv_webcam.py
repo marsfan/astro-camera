@@ -157,7 +157,7 @@ class CameraThread(Thread):
 
         """
         self._running.clear()
-        if current_thread != self:
+        if current_thread() != self:
             self.join()
 
 
