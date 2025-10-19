@@ -18,10 +18,13 @@ from picamera2.request import CompletedRequest
 from . import CameraBase
 
 
+# TODO: Do we want to have the encoding happen in the callback?
+# RPi says it might be ok to do that:
+# https://github.com/raspberrypi/picamera2/discussions/1332#discussioncomment-14684027
 def _photo_signal(
-    job: Job,
+    _job: Job[Any],
     loop: asyncio.AbstractEventLoop,
-    future: asyncio.Future,
+    future: asyncio.Future[str],
 ) -> None:
     """Signal function to set a future to indicate that taking a photo is done.
 
@@ -128,7 +131,7 @@ class PiCamera(CameraBase):
         self,
         request: CompletedRequest,
     ) -> tuple[dict[str, Any], bytes, bytes]:
-        """Process the request into the output images, and release it, and restart encoder.
+        """Process request into output images, release it, and restart encoder.
 
         Arguments:
             request: The request to process
@@ -187,7 +190,8 @@ class PiCamera(CameraBase):
         # Take the photo
         # FIXME: After it switches back, controls are defaults, not last
         # user specified values
-        # FIXME: Function docstring say to try using switch_mode_capture_request_and_stop instead
+        # FIXME: Function docstring say to try using
+        # switch_mode_capture_request_and_stop instead
         request = self._picam2.switch_mode_and_capture_request(
             capture_config,
         )
@@ -215,7 +219,8 @@ class PiCamera(CameraBase):
         # Take the photo
         # FIXME: After it switches back, controls are defaults, not last
         # user specified values
-        # FIXME: Function docstring say to try using switch_mode_capture_request_and_stop instead
+        # FIXME: Function docstring say to try using
+        # switch_mode_capture_request_and_stop instead
         loop = asyncio.get_running_loop()
         photo_done = asyncio.get_running_loop().create_future()
 

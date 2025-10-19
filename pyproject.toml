@@ -50,7 +50,8 @@ ignore = [
     "TRY003",   # Long messages in exception are ok
     "EM101",    # String literal in exception is OK
     "T201",     # Print statements in code are OK
-    "FBT001",    # Boolean positional arguments are OK
+    "FBT001",   # Boolean positional arguments are
+    "EXE001",   # I put shebangs even in files not marked as EXE just to stay in the habit.
 ]
 
 [tool.ruff.lint.pydocstyle]

@@ -25,6 +25,7 @@ class Server:
     """Main web interface for camera control."""
 
     def count_up(self) -> None:
+        """Increment the counter, rolling over at 100."""
         self.counter += 1
         self.counter %= 100
 
@@ -86,6 +87,10 @@ class Server:
             )
 
             # Defining the main UI.
+
+            # TODO: Remove this and replace with a nicer visualization?
+            # This is a counter that I'm using as a visual indicator for
+            # when the WebUI lags.
             nicegui.ui.label().bind_text_from(self, "counter")
             nicegui.ui.button("Take Photo", on_click=self.take_photo)
             nicegui.ui.label("Exposure Control").style(
@@ -172,12 +177,19 @@ class Server:
 
     async def take_photo(self) -> None:
         """Take a photo with the camera, and save the photo on disk."""
-        # FIXME: Taking the photo and encoding to DNG is CPU bound, but we can't pickle the camera class
+        # FIXME: Taking the photo and encoding to DNG is CPU bound, but we
+        # can't pickle the camera class
         # due to unpickeable libcamera stuff. Need to figure this out
-        # Either maybe we should push all camera to separate thread and use a loopback
-        # or leverage some of the async stuff built into the module github.com/raspberrypi/picamera2/issues/714
+        # Either maybe we should push all camera to separate thread and use a
+        # loopback or leverage some of the async stuff built into the module
+        # github.com/raspberrypi/picamera2/issues/714
         camera_data, jpg_photo, dng_photo = await self._camera.take_photo_async()
-        await nicegui.run.io_bound(self.write_photos, jpg_photo, dng_photo, camera_data)
+        await nicegui.run.io_bound(
+            self.write_photos,
+            jpg_photo,
+            dng_photo,
+            camera_data,
+        )
 
     # Making this static so that we can await it without needing to pickle full
     # class if changed to use cpu_bound
@@ -186,7 +198,7 @@ class Server:
     def write_photos(
         jpg_bytes: bytes,
         dng_bytes: bytes,
-        metadata: dict[str, Any]
+        metadata: dict[str, Any],
     ) -> None:
         """Save the taken image.
 
@@ -255,7 +267,7 @@ class Server:
         self.current_exposure = metadata["ExposureTime"]
         self.current_gain = metadata["AnalogueGain"]
         # FIXME: Not in metadata, where do I get this?
-        # self.current_ev = metadata["ExposureValue"]
+        # self.current_ev = metadata["ExposureValue"]  # noqa: ERA001
 
 
 def setup_debug() -> None:
