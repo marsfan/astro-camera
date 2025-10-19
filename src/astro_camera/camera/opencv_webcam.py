@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """Module for manipulating camera via OpenCV."""
+import subprocess
+import sys
 import time
 from threading import Condition, Event, Thread
 from typing import TYPE_CHECKING, Any
@@ -14,7 +16,21 @@ from . import CameraBase
 
 # TODO: Context manager suppot
 # TODO: Metdata suport, exposure support
-# FIXME: Frame rate for this is really awful. Need to look into it more.
+# FIXME: Try setting camera to use MJPG fourCC. If it works, the camera
+# has built in MJPG encoder we could use instead.
+# Something like this:
+# fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+# camera.set(cv2.CAP_PROP_FOURCC, fourcc)
+# assert fourcc == camera.get(cv2.CAP_PROP_FOURCC)
+# camera.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+# On linux, we can list supported fourcc with `v4l2-ctl --device=/dev/video0 --list-formats-ext`
+# Also can list all info about device with `v4l2-ctl --device=/dev/video0 --all`
+
+# TODO: Support exposure, gain, etc
+# cv2.CAP_PROP_EXPOSURE controlss exposure. Small number is longer exposure (IDK why)
+# Seems to range from 0 to 10000 in steps of 10?
+
+# cv2.CAP_PROP_GAIN seems to have no effect?
 
 
 class CameraThread(Thread):
@@ -43,6 +59,26 @@ class CameraThread(Thread):
 
         """
         self._capture = cv2.VideoCapture(self._camera_index)
+        # FIXME: Figure out how to do this in OpenCV/python
+        # The webcam I'm using has some sort of dynamic framerate linked
+        # to exposure. I can get good framerates with camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
+        # But then I have to handle controlling things myself.
+        # Instead, I can use this command to take manual control and it seems to work out OK
+        # It still sort of manual, but brightness looks better.
+        # Per RPI forums, this is to let the AE algorithm slow the exposure
+        # time down to levels that hurt frame rate.
+        # forums.raspberrypi.com/viewtopic.php?t=206708
+        if sys.platform == "linux":
+            subprocess.run(
+                [
+                    "/usr/bin/v4l2-ctl",
+                    "--device=/dev/video0",
+                    "--set-ctrl",
+                    "exposure_dynamic_framerate=0",
+                ],
+                check=True,
+                shell=False,
+            )
 
         # FIXME: Need to have logic to clear the event so we shutdown cleanly
         self._running.set()
