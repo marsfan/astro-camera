@@ -202,20 +202,6 @@ class OpenCVWebcam(CameraBase):
                 * Image in DNG
 
         """
-        # FIXME: Figure out how to actually make this async
-        if self._capture is None:
-            raise ValueError("Camera HW has not been initialized.")
-        # FIXME: Need to figure out how to encode DNG. Seems OpenCV
-        # Does not have that by default.
-        rc, img = self._capture.read()
-        if not rc:
-            raise RuntimeError("Failed to read frame.")
-
-        rc, jpg = cv2.imencode(".jpg", img)
-        if not rc:
-            raise RuntimeError("Failed to encode frame.")
-        # FIXME: Include image metadata.
-
         data: dict[str, Any] = {
             "cam_driver": "cv2",
             "metadata": self.get_metadata(),
@@ -226,7 +212,9 @@ class OpenCVWebcam(CameraBase):
             # "camera_properties": self._picam2.camera_properties
         }
 
-        return data, bytes(jpg), b""
+        # FIXME: Need to figure out how to encode DNG. Seems OpenCV
+        # Does not have that by default.
+        return data, self._camera_thread.get_photo(), b""
 
     def get_metadata(self) -> dict[str, float]:
         """Get camera metadata.
