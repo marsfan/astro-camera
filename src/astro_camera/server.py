@@ -96,8 +96,13 @@ class Server:
             nicegui.ui.label("Exposure Control").style(
                 "font-size: 20px; font-weight: bold",
             )
-            ae_switch = nicegui.ui.switch(
-                "Auto Exposure").bind_value(self, "ae_enable")
+
+            ae_switch = nicegui.ui.switch("Auto Exposure")
+            ae_switch.bind_value(self, "ae_enable")
+            ae_switch.on_value_change(
+                lambda v: self._camera.set_auto_exposure(v.value),
+            )
+
             with nicegui.ui.row():
                 nicegui.ui.number(label="Exposure").bind_enabled_from(
                     ae_switch,
@@ -225,10 +230,8 @@ class Server:
             modified_controls["ExposureTime"] = int(self.exposure * 1000000)
             modified_controls["AnalogueGain"] = self.gain
             modified_controls["ExposureValue"] = self.ev
-            modified_controls["AeEnable"] = False
         else:
             modified_controls["ExposureValue"] = self.ev
-            modified_controls["AeEnable"] = True
 
         self._camera.set_controls(modified_controls)
 

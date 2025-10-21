@@ -17,6 +17,17 @@ from picamera2.request import CompletedRequest
 
 from . import CameraBase
 
+# TODO: We need to disable defective pixel correction, which can eat
+# small points in astrophotography applications. See
+# https://forums.raspberrypi.com/viewtopic.php?f=43&t=277768
+
+# TODO: Other things to look into:
+# https://hackaday.io/project/192267-open360camera/log/230205-sidequest-overclocking-imx477-camera
+# https://www.willwhang.dev/OneInchEye/
+# https://github.com/raspberrypi/linux/blob/rpi-6.12.y/drivers/media/i2c/imx477.c
+# https://github.com/Monstrofil/sony-imx-controls/blob/master/imx477/registers.py
+# https://opencv.org/blog/autofocus-using-opencv-a-comparative-study-of-focus-measures-for-sharpness-assessment/
+
 
 # TODO: Do we want to have the encoding happen in the callback?
 # RPi says it might be ok to do that:
@@ -117,7 +128,9 @@ class PiCamera(CameraBase):
             raise ValueError("Camera is not initialized.")
         # Create config for high res photo
         capture_config = self._picam2.create_still_configuration(
-            raw={},
+            # FIXME: Support other configurations. This is hardcoded values for HQ Camera
+            # You can use rpicam-hello --list-cameras to list supported modes
+            raw={"format": "SRGGB12_CSI2P", "size": (4056, 3040)},
             display=None,
             controls=self._cam_controls,
         )
@@ -154,12 +167,12 @@ class PiCamera(CameraBase):
         # FIXME: Is there a way to do this without using a BytesIO?
         request.save("main", jpg_buf, format="jpg")
         request.save_dng(dng_buf)
-
         # Built metadata structure
+
         data = {
             "cam_driver": "picamera2",
             "metadata": request.get_metadata(),
-            # "config": request.config, # FIXME: Get this working # noqa: ERA001,E501
+            # "request_config": request.config,  # FIXME: Get this working # noqa: ERA001,E501
             "camera_properties": self._picam2.camera_properties,
         }
 
@@ -324,7 +337,7 @@ class PiCamera(CameraBase):
             time: The exposure time to set
 
         """
-        self._cam_controls["ExposureTime"] = time
+        self.set_controls({"ExposureTime": time})
 
     def set_gain(self, gain: float) -> None:
         """Set sensor gain.
@@ -333,7 +346,7 @@ class PiCamera(CameraBase):
             gain: The sensor gain to set.
 
         """
-        self._cam_controls["AnalogueGain"] = gain
+        self.set_controls({"AnalogueGain": gain})
 
     def set_ev(self, ev: float) -> None:
         """Set sensor exposure compensation.
@@ -342,7 +355,7 @@ class PiCamera(CameraBase):
             ev: The exposure compensation to set.
 
         """
-        self._cam_controls["ExposureValue"] = ev
+        self.set_controls({"ExposureValue": ev})
 
     def set_auto_exposure(self, ae: bool) -> None:
         """Enable/Disable auto-exposure.
@@ -351,7 +364,7 @@ class PiCamera(CameraBase):
             ae: Whether or not to enable auto-exposure
 
         """
-        self._cam_controls["AeEnable"] = ae
+        self.set_controls({"AeEnable": ae})
 
     def get_exposure_time(self) -> float:
         """Get the exposure time.
