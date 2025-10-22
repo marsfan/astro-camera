@@ -73,7 +73,8 @@ class Server:
             """Create top level (i.e. root) page."""
             # For non-flickering image updates and automatic bandwidth
             # adaptation an interactive image is much better than `ui.image()`.
-            video_image = nicegui.ui.interactive_image()
+            video_image = nicegui.ui.interactive_image(size=(640, 480))
+            video_image.style("max-width: 960px")
 
             # Timer to constantly update image source
             # We are appending current timestamp to the source to force browser
