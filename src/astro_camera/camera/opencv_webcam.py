@@ -62,6 +62,8 @@ class CameraThread(Thread):
 
         """
         self._capture = cv2.VideoCapture(self._camera_index)
+        self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1920)
+        self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1080)
         # FIXME: Figure out how to do this in OpenCV/python
         # The webcam I'm using has some sort of dynamic framerate linked
         # to exposure. I can get good framerates with
@@ -91,11 +93,15 @@ class CameraThread(Thread):
             rc, full_jpg = cv2.imencode(".jpg", img)
             if not rc:
                 raise RuntimeError("Failed to encode full image.")
-            height, width, _ = img.shape
-            scaled = cv2.resize(
-                img,
-                (640, int(640 / width * height)),
-            )
+            print(img.shape)
+            if img.shape() > (1920, 1080):
+                height, width, _ = img.shape
+                scaled = cv2.resize(
+                    img,
+                    (1920, int(1920 / width * height)),
+                )
+            else:
+                scaled = img
             rc, scaled_jpg = cv2.imencode(".jpg", scaled)
             if not rc:
                 raise RuntimeError("Failed to encode preview image")

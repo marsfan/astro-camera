@@ -60,8 +60,12 @@ class CameraBase(ABC):
     def get_frame(self) -> bytes:
         """Get a single frame for real-time streaming.
 
-        The output from should have a width of 640 pixels, to keep
-        preview size and network use low.
+        The output from this should not exceed 1920x1280px in
+        resolution, to keep bandwidth requirements low for allowing
+        a manageable frame rate.
+
+        Additionally, on Raspberry Pi computers less than RPi5, this
+        is the maximum resolution supported by the hardware encoders.
 
         Returns:
             Single frame for display.

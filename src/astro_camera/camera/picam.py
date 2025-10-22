@@ -9,7 +9,8 @@ from io import BufferedIOBase, BytesIO
 from threading import Condition
 from typing import Any
 
-from picamera2.encoders import MJPEGEncoder  # type: ignore[attr-defined]
+# type: ignore[attr-defined]
+from picamera2.encoders import MJPEGEncoder, Quality
 from picamera2.job import Job
 from picamera2.outputs.fileoutput import FileOutput
 from picamera2.picamera2 import Picamera2
@@ -92,11 +93,15 @@ class PiCamera(CameraBase):
         """Initialize the camera hardware."""
         self._picam2 = Picamera2()
         self._preview_config = self._picam2.create_video_configuration(
-            main={"size": (640, 480)},
+            main={"size": (1920, 1080)},
             controls=self._cam_controls,
         )
         self._picam2.configure(self._preview_config)
-        self._picam2.start_recording(MJPEGEncoder(), FileOutput(self._output))
+        self._picam2.start_recording(
+            MJPEGEncoder(),
+            FileOutput(self._output),
+            quality=Quality.VERY_HIGH,
+        )
 
     def get_frame(self) -> bytes:
         """Get a single frame for real-time streaming.

@@ -53,7 +53,7 @@ class DummyCamera(CameraBase):
         # Internally, the image array is height X width.
         # But then the resize function expects us to provide width X height
         height, width, _ = img.shape
-        img = cv2.resize(img, (640, int(640 / width * height)))
+        img = cv2.resize(img, (1920, int(1920 / width * height)))
         rc, self._last_frame = cv2.imencode(".jpg", img)
         self._last_time = monotonic()
 
