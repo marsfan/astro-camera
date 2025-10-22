@@ -135,7 +135,11 @@ class PiCamera(CameraBase):
         capture_config = self._picam2.create_still_configuration(
             # FIXME: Support other configurations. This is hardcoded values for HQ Camera
             # You can use rpicam-hello --list-cameras to list supported modes
-            raw={"format": "SRGGB12_CSI2P", "size": (4056, 3040)},
+            # FIXME: Need to support correct uncompressed format for each camera
+            # SBGGR16 is uncompressed for HQ camera on Pi5
+            # See https://github.com/raspberrypi/picamera2/discussions/1335
+            # for more info
+            raw={"format": "SBGGR16", "size": (4056, 3040)},
             display=None,
             controls=self._cam_controls,
         )
