@@ -93,8 +93,7 @@ class CameraThread(Thread):
             rc, full_jpg = cv2.imencode(".jpg", img)
             if not rc:
                 raise RuntimeError("Failed to encode full image.")
-            print(img.shape)
-            if img.shape() > (1920, 1080):
+            if img.shape[0] > 1920:
                 height, width, _ = img.shape
                 scaled = cv2.resize(
                     img,
