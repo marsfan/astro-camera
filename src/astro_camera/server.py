@@ -8,7 +8,6 @@ import asyncio
 import json
 import logging
 import signal
-import sys
 import time
 import warnings
 from datetime import UTC, datetime
@@ -19,8 +18,11 @@ from typing import Any
 import fastapi
 import nicegui
 
-from . import __version__
 from .camera import CameraBase
+
+# FIXME: Seems that if we leave AE on, we can set just exposurre or gain
+# and the other will auto set. Do we want to enable this?
+# FIXME: Support dynamic setting of min/max values for inputs from configuration
 
 
 def create_nav_elements() -> None:
@@ -161,7 +163,10 @@ class Server:
                     max=8,
                     step=0.1,
                     value=0,
-                ).style("max-width: 180px").bind_value(self, "ev")
+                ).style("max-width: 180px").bind_value(self, "ev").on_value_change(
+                    lambda v: self._camera.set_ev(v.value),
+
+                )
                 nicegui.ui.label().bind_text_from(self, "ev")
                 nicegui.ui.label("EV")
 
@@ -252,12 +257,8 @@ class Server:
         modified_controls: dict[str, Any] = {}
 
         if not self.ae_enable:
-
             modified_controls["ExposureTime"] = int(self.exposure * 1000000)
             modified_controls["AnalogueGain"] = self.gain
-            modified_controls["ExposureValue"] = self.ev
-        else:
-            modified_controls["ExposureValue"] = self.ev
 
         self._camera.set_controls(modified_controls)
 
