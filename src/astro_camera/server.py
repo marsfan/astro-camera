@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import signal
+import sys
 import time
 import warnings
 from datetime import UTC, datetime
@@ -18,7 +19,29 @@ from typing import Any
 import fastapi
 import nicegui
 
+from . import __version__
 from .camera import CameraBase
+
+
+def create_nav_elements() -> None:
+    """Create navigation  elements for all pages."""
+    left_drawer = nicegui.ui.left_drawer(
+        value=False,
+        fixed=False,
+    )
+    left_drawer.classes("items-left")
+    left_drawer.props("width=100")
+
+    with nicegui.ui.header(elevated=True):
+        nicegui.ui.button(
+            on_click=left_drawer.toggle,
+            icon="menu",
+        )
+    with left_drawer:
+        nicegui.ui.menu_item(
+            "Home",
+            on_click=lambda: nicegui.ui.navigate.to("/"),
+        )
 
 
 class Server:
@@ -69,10 +92,12 @@ class Server:
             return fastapi.Response(content=frame, media_type="image/jpeg")
 
         @nicegui.ui.page("/", title="Astro Camera Control")
-        async def root_page() -> None:
+        def root_page() -> None:
             """Create top level (i.e. root) page."""
+            create_nav_elements()
             # For non-flickering image updates and automatic bandwidth
             # adaptation an interactive image is much better than `ui.image()`.
+
             video_image = nicegui.ui.interactive_image(size=(640, 480))
             video_image.style("max-width: 960px")
 
@@ -92,7 +117,7 @@ class Server:
             # TODO: Remove this and replace with a nicer visualization?
             # This is a counter that I'm using as a visual indicator for
             # when the WebUI lags.
-            nicegui.ui.label().bind_text_from(self, "counter")
+            # nicegui.ui.label().bind_text_from(self, "counter")
             nicegui.ui.button("Take Photo", on_click=self.take_photo)
             nicegui.ui.label("Exposure Control").style(
                 "font-size: 20px; font-weight: bold",
