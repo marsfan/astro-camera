@@ -6,11 +6,11 @@ import sys
 from viztracer import VizTracer
 
 from astro_camera.camera.dummy import DummyCamera
+from astro_camera.camera.opencv_webcam import OpenCVWebcam
 from astro_camera.server import server_main
 
 try:
     from astro_camera.camera.picam import PiCamera
-    from astro_camera.camera.opencv_webcam import OpenCVWebcam
 except ImportError:
     # If the PiCamera module fails to load, we are probably running
     # on non-rpi hardware. If the user requests using RPI camera
@@ -31,12 +31,13 @@ def main() -> None:
         # log_async=True
     )
 
-    if "picamera" in sys.argv:
+    if "picam" in sys.argv:
         camera = PiCamera()
     elif "webcam" in sys.argv:
         camera = OpenCVWebcam()
     else:
         camera = DummyCamera()
+
     with tracer:
         server_main(camera=camera)
 
