@@ -93,9 +93,16 @@ class PiCamera(CameraBase):
         """Initialize the camera hardware."""
         self._picam2 = Picamera2()
         self._preview_config = self._picam2.create_video_configuration(
-            # FIXME: 1920x1080 leads to nearly 500MiB RA< use on a Pi5.
-            # Need to check if its better on Pi3 since it has hw encoderd
-            main={"size": (1920, 1080)},
+            # FIXME: 2028x1520 leads to nearly 400MiB RAM use on a Pi5.
+            # Need to check if its better on Pi3 since it has hw encoder
+            # Also, we camera does not seem to have a 1/4 scale view so
+            # we can't seem to really shrink it down more.
+            main={
+                "size": (1920, 1080),
+                # Cuts around 15MiB to use instead of XRG8888
+                # Also, HW encoder on older models only supports this format
+                "format": "YUV420",
+            },
             controls=self._cam_controls,
         )
         self._picam2.configure(self._preview_config)
