@@ -20,7 +20,7 @@ import nicegui
 
 from .camera import CameraBase
 
-# FIXME: Seems that if we leave AE on, we can set just exposurre or gain
+# FIXME: Seems that if we leave AE on, we can set just exposure or gain
 # and the other will auto set. Do we want to enable this?
 # FIXME: Support dynamic setting of min/max values for inputs from configuration
 
@@ -46,8 +46,31 @@ def create_nav_elements() -> None:
         )
 
 
+def update_gain_exposure_disable(owner: "Server", _value: bool) -> None:
+    """Update the variable that is used to disable gain and exposure entry.
+
+    This is necessary as there are multiple properties that the enabled
+    state of the exposure and gain properties depend on.
+
+    Arguments:
+        owner: The object that the variable is owned by
+        _value: The newly set value. Not used
+
+    """
+    owner.exposure_gain_state = not (
+        owner.capture_in_progress or owner.ae_enable)
+
+
 class Server:
     """Main web interface for camera control."""
+
+    capture_in_progress = nicegui.binding.BindableProperty(
+        update_gain_exposure_disable,
+    )
+
+    ae_enable = nicegui.binding.BindableProperty(
+        update_gain_exposure_disable,
+    )
 
     def count_up(self) -> None:
         """Increment the counter, rolling over at 100."""
@@ -68,6 +91,10 @@ class Server:
         self.current_ev = 0.0
 
         self.counter = 0
+
+        self.exposure_gain_state = False
+
+        self.capture_in_progress = False
 
         nicegui.app.on_shutdown(self.cleanup)
         # We also need to disconnect clients when the app is stopped with
@@ -100,8 +127,15 @@ class Server:
             # For non-flickering image updates and automatic bandwidth
             # adaptation an interactive image is much better than `ui.image()`.
 
-            video_image = nicegui.ui.interactive_image(size=(640, 480))
+            video_image = nicegui.ui.interactive_image()
             video_image.style("max-width: 960px")
+            with video_image:
+                spinner = nicegui.ui.spinner(size="10em")
+                spinner.visible = False
+                spinner.bind_visibility_from(self, "capture_in_progress")
+                spinner.classes(
+                    "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                )
 
             # Timer to constantly update image source
             # We are appending current timestamp to the source to force browser
@@ -121,6 +155,7 @@ class Server:
             # when the WebUI lags.
             # nicegui.ui.label().bind_text_from(self, "counter")
             nicegui.ui.button("Take Photo", on_click=self.take_photo)
+
             nicegui.ui.label("Exposure Control").style(
                 "font-size: 20px; font-weight: bold",
             )
@@ -132,30 +167,27 @@ class Server:
             )
 
             with nicegui.ui.row():
-                nicegui.ui.number(label="Exposure").bind_enabled_from(
-                    ae_switch,
-                    "value",
-                    # Inverts the switch value, so when switch is on,
-                    # we disable widget
-                    backward=lambda value: not value,
-                ).bind_value(self, "exposure")
+                exposure_entry = nicegui.ui.number(label="Exposure")
+                exposure_entry.bind_value(self, "exposure")
+                exposure_entry.bind_enabled_from(
+                    self,
+                    "exposure_gain_state",
+                )
+
                 nicegui.ui.label().bind_text_from(
                     self,
                     "current_exposure",
                     backward=lambda v: f"Current Exposure Time: {v:0.1f}",
                 )
             with nicegui.ui.row():
-                nicegui.ui.number(label="Gain").bind_enabled_from(
-                    ae_switch,
-                    "value",
-                    # Inverts the switch value, so when switch is on,
-                    # we disable widget
-                    backward=lambda value: not value,
-                ).bind_value(self, "gain")
+                gain_entry = nicegui.ui.number(label="Gain")
+                gain_entry.bind_value(self, "gain")
+                gain_entry.bind_enabled_from(self, "exposure_gain_state")
                 nicegui.ui.label().bind_text_from(
                     self,
                     "current_gain",
                     backward=lambda v: f"Current Gain: {v:.1f}",
+
                 )
             with nicegui.ui.row().classes("w-full no-wrap"):
                 nicegui.ui.slider(
@@ -165,7 +197,10 @@ class Server:
                     value=0,
                 ).style("max-width: 180px").bind_value(self, "ev").on_value_change(
                     lambda v: self._camera.set_ev(v.value),
-
+                ).bind_enabled_from(
+                    self,
+                    "capture_in_progress",
+                    lambda v: not v,
                 )
                 nicegui.ui.label().bind_text_from(self, "ev")
                 nicegui.ui.label("EV")
@@ -174,10 +209,18 @@ class Server:
                 nicegui.ui.button(
                     "Set Options",
                     on_click=self.set_camera_props,
+                ).bind_enabled_from(
+                    self,
+                    "capture_in_progress",
+                    lambda v: not v,
                 )
                 nicegui.ui.button(
                     "Reset Options",
                     on_click=self.reset_camera_props,
+                ).bind_enabled_from(
+                    self,
+                    "capture_in_progress",
+                    lambda v: not v,
                 )
             nicegui.ui.button(
                 "Dump Stuff",
@@ -219,6 +262,7 @@ class Server:
         # Either maybe we should push all camera to separate thread and use a
         # loopback or leverage some of the async stuff built into the module
         # github.com/raspberrypi/picamera2/issues/714
+        self.capture_in_progress = True
         camera_data, jpg_photo, dng_photo = await self._camera.take_photo_async()
         await nicegui.run.io_bound(
             self.write_photos,
@@ -226,6 +270,7 @@ class Server:
             dng_photo,
             camera_data,
         )
+        self.capture_in_progress = False
 
     # Making this static so that we can await it without needing to pickle full
     # class if changed to use cpu_bound
