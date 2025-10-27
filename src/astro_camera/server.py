@@ -154,7 +154,10 @@ class Server:
             # This is a counter that I'm using as a visual indicator for
             # when the WebUI lags.
             # nicegui.ui.label().bind_text_from(self, "counter")
-            nicegui.ui.button("Take Photo", on_click=self.take_photo)
+            nicegui.ui.button("Take Photo", on_click=self.take_photo).bind_enabled_from(
+                self,
+                "capture_in_progress", backward=lambda v: not v,
+            )
 
             nicegui.ui.label("Exposure Control").style(
                 "font-size: 20px; font-weight: bold",
@@ -164,6 +167,10 @@ class Server:
             ae_switch.bind_value(self, "ae_enable")
             ae_switch.on_value_change(
                 lambda v: self._camera.set_auto_exposure(v.value),
+            )
+            ae_switch.bind_enabled_from(
+                self,
+                "capture_in_progress", backward=lambda v: not v,
             )
 
             with nicegui.ui.row():
