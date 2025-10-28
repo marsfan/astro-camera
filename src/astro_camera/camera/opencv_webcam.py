@@ -74,16 +74,21 @@ class CameraThread(Thread):
         # algorithm slow the exposure time down to levels that hurt frame rate.
         # forums.raspberrypi.com/viewtopic.php?t=206708
         if sys.platform == "linux":
-            subprocess.run(
-                [
-                    "/usr/bin/v4l2-ctl",
-                    "--device=/dev/video0",
-                    "--set-ctrl",
-                    "exposure_dynamic_framerate=0",
-                ],
-                check=True,
-                shell=False,
-            )
+            try:
+                subprocess.run(
+                    [
+                        "/usr/bin/v4l2-ctl",
+                        "--device=/dev/video0",
+                        "--set-ctrl",
+                        "exposure_dynamic_framerate=0",
+                    ],
+                    check=True,
+                    shell=False,
+                )
+            except FileNotFoundError:
+                # If the system does not have v4l2-ctl, print a warning and move on
+                print("WARNING: running v4l2-ctl did not work. Proceeding without disabling exposure_dynamic_framerate")
+                pass
 
         self._running.set()
         while self._running.is_set():
