@@ -76,6 +76,7 @@ def update_gain_exposure_disable(owner: "Server", _value: bool) -> None:
 @nicegui.ui.page("/image_browser")
 def image_browser() -> None:
     """Page for browsing all saved images."""
+    create_nav_elements()
     lightbox = Lightbox()
     with nicegui.ui.row().classes("w-full justify-center"):
         images = sorted(Path("images").resolve().glob("*.jpg"))
