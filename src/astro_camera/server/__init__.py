@@ -28,6 +28,8 @@ from .image_browser import Lightbox
 
 # FIXME: Change to use subdir of user directory.
 IMAGE_DIR = Path("images")
+if not IMAGE_DIR.is_dir():
+    IMAGE_DIR.mkdir(parents=True)
 
 
 def create_nav_elements() -> None:
