@@ -18,11 +18,16 @@ from typing import Any
 import fastapi
 import nicegui
 
-from .camera import CameraBase
+from astro_camera.camera import CameraBase
+
+from .image_browser import Lightbox
 
 # FIXME: Seems that if we leave AE on, we can set just exposure or gain
 # and the other will auto set. Do we want to enable this?
 # FIXME: Support dynamic setting of min/max values for inputs from configuration
+
+# FIXME: Change to use subdir of user directory.
+IMAGE_DIR = Path("images")
 
 
 def create_nav_elements() -> None:
@@ -44,6 +49,10 @@ def create_nav_elements() -> None:
             "Home",
             on_click=lambda: nicegui.ui.navigate.to("/"),
         )
+        nicegui.ui.menu_item(
+            "Images",
+            on_click=lambda: nicegui.ui.navigate.to("/image_browser"),
+        )
 
 
 def update_gain_exposure_disable(owner: "Server", _value: bool) -> None:
@@ -59,6 +68,21 @@ def update_gain_exposure_disable(owner: "Server", _value: bool) -> None:
     """
     owner.exposure_gain_state = not (
         owner.capture_in_progress or owner.ae_enable)
+
+
+# This page does not use any logic in the server class, so we can define
+# it outside of the class.
+# TODO: Maybe change that?
+@nicegui.ui.page("/image_browser")
+def image_browser() -> None:
+    """Page for browsing all saved images."""
+    lightbox = Lightbox()
+    with nicegui.ui.row().classes("w-full justify-center"):
+        images = sorted(Path("images").resolve().glob("*.jpg"))
+        for image in images:
+            lightbox.add_image(image)
+
+    nicegui.ui.timer(0, lightbox.populate, once=True)
 
 
 class Server:
@@ -297,9 +321,10 @@ class Server:
 
         """
         filename = f"IMG_{datetime.isoformat(datetime.now(UTC))}".replace(":", "_")  # noqa: E501
-        Path(f"{filename}.jpg").write_bytes(jpg_bytes)
-        Path(f"{filename}.dng").write_bytes(dng_bytes)
-        Path(f"{filename}.metadata.json").write_text(
+
+        (IMAGE_DIR / f"{filename}.jpg").write_bytes(jpg_bytes)
+        (IMAGE_DIR / f"{filename}.dng").write_bytes(dng_bytes)
+        (IMAGE_DIR / f"{filename}.metadata.json").write_text(
             json.dumps(metadata, indent=4),
             "UTF-8",
         )
