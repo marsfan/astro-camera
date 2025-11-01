@@ -16,8 +16,6 @@ name = "piwheels"
 picam-no-deps = "pip install --no-deps picamera2"
 
 [packages]
-opencv-python = "*"
-nicegui = "*"
 astro-camera = {file = ".", editable = true}
 
 [dev-packages]

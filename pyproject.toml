@@ -8,7 +8,7 @@ description = "Raspberry Pi based astrophotography system."
 readme = "README.md"
 license = "MPL-2.0"
 dynamic = ["version"]
-dependencies = ["nicegui", "opencv-python"]
+dependencies = ["nicegui", "opencv-python", "simplejpeg"]
 requires-python = ">=3.11"
 authors = [
     { name = "Gabriel Roper", email = "9311953+marsfan@users.noreply.github.com" },
