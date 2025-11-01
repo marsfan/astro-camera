@@ -3,7 +3,6 @@
 from base64 import b64encode
 from functools import lru_cache
 from pathlib import Path
-from threading import current_thread
 
 import cv2
 import simplejpeg
@@ -27,7 +26,6 @@ def create_b64_thumb(image: Path) -> str:
     """
     # Load image as quickly as possible
     # Format needs to be BGR since that's what OpenCV uses
-    print(current_thread())
     im = simplejpeg.decode_jpeg(
         image.read_bytes(),
         colorspace="bgr",
