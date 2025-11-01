@@ -72,7 +72,7 @@ def update_gain_exposure_disable(owner: "Server", _value: bool) -> None:
 
 # This page does not use any logic in the server class, so we can define
 # it outside of the class.
-# TODO: Maybe change that?
+# TODO: Maybe change that, put this in server class?
 @nicegui.ui.page("/image_browser")
 def image_browser() -> None:
     """Page for browsing all saved images."""
@@ -83,7 +83,7 @@ def image_browser() -> None:
         for image in images:
             lightbox.add_image(image)
 
-    nicegui.ui.timer(0, lightbox.populate, once=True)
+    lightbox.populate()
 
 
 class Server:

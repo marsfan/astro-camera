@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """Page for displaying the images that have been taken."""
-import asyncio
 from base64 import b64encode
 from functools import lru_cache
 from pathlib import Path
+from threading import current_thread
 
 import cv2
 import simplejpeg
 from nicegui import events, run, ui
 from nicegui.events import ClickEventArguments, Handler
 
+
 # Making this function a LRU cache means that we cache
 # the images, so if another request is made, we already have scaled
 # images in memory.
-
-
 @lru_cache
 def create_b64_thumb(image: Path) -> str:
     """Create a thumbnail with a maximum width of 350 pixels.
@@ -28,6 +27,7 @@ def create_b64_thumb(image: Path) -> str:
     """
     # Load image as quickly as possible
     # Format needs to be BGR since that's what OpenCV uses
+    print(current_thread())
     im = simplejpeg.decode_jpeg(
         image.read_bytes(),
         colorspace="bgr",
@@ -50,28 +50,6 @@ def create_b64_thumb(image: Path) -> str:
     buf = b64encode(simplejpeg.encode_jpeg(im, colorspace="bgr", fastdct=True))
     # Return b64 encoding of the image.
     return f"data:image/jpeg;base64,{buf.decode('ascii')}"
-
-
-def prep_elem(elem: ui.image, path: Path) -> tuple[ui.image, str]:
-    """Create thumbnail version of an image, and get it in base64 encoding.
-
-    The reason to also take in a ui.image element is so that we can
-    keep track of which image belongs to which UI element. Since this
-    function is called in parallel threads, keeping track of this
-    relationship is needed, or thumbnails could be added to the wrong
-    element.
-
-    Arguments:
-        elem: The UI element that the thumbnail should be added to
-        path: Path to the image to create the thumbnail for on the disk.
-
-    Returns:
-        Two element tuple. The first element is the ui element that was
-        passed in. The second element is the base64 encoded thumbnail
-        for the image.
-
-    """
-    return elem, create_b64_thumb(path)
 
 
 class NavButton(ui.button):
@@ -135,6 +113,21 @@ class DeleteDialog(ui.dialog):
         self._card.delete()
 
 
+async def compute_and_set_thumbnail(element: ui.image, filepath: Path) -> None:
+    """Create the scaled down thumbnail for an image.
+
+    Arguments:
+        element: The element to set the image for
+        filepath: Path to the file to create a thumbnail from.
+
+    """
+    # Even though this is computationally expensive, the logic is
+    # all done in native code, not pure python. Native code can release
+    # the GIL, so we can use io_bound (which uses a threadpoolexecutor)
+    # to run all the jobs
+    element.set_source(await run.io_bound(create_b64_thumb, filepath))
+
+
 class Lightbox:
     """Main lightbox that displays the images."""
 
@@ -175,30 +168,26 @@ class Lightbox:
                     on_click=lambda: self._download_files(im_path),
                 ).tooltip("Download")
 
-    async def populate(self) -> None:
-        """Populate the thumbnails with the actual images."""
+    def populate(self) -> None:
+        """Populate the thumbnails with the actual images.
+
+        This function will return immediately, but it created
+        asynchronous, parallel tasks that will handle generating the
+        thumbnails for each image, and then displaying them in the
+        lightbox
+
+        """
         # Zip pairs of the elements and the images of the thumbnails we
         # want.
         pairs = zip(self.thumb_objs, self.image_list, strict=True)
-
-        # Create coroutines for setting each image thumbnail, then run
-        # all of them at once.
-        #
-        # Even though this is computationally expensive, the logic is
-        # all done in native code, not pure python. Native code can release
-        # the GIL, so we can use io_bound (which uses a threadpoolexecutor)
-        # to run all the jobs
-        results = await asyncio.gather(
-            *(run.io_bound(prep_elem, e, i) for e, i in pairs),
-        )
-        # Use the results from the coroutines to populate the elements.
-        # We have to do this here, for thread safety reason
-        #
-        # FIXME: FIgure out how to execute these as the tasks are completed
-        # so we don't need to wait for all thumbnails to be processed before
-        # showuing them
-        for element, image in results:
-            element.set_source(image)
+        # Create async tasks that run right away for each image that we want
+        # to populate the thumbnail with.
+        for element, image in pairs:
+            ui.timer(
+                0,
+                lambda e=element, i=image: compute_and_set_thumbnail(e, i),
+                once=True,
+            )
 
     def _handle_key(self, event_args: events.KeyEventArguments) -> None:
         """Handle user keypresses.
