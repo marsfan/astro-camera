@@ -10,12 +10,12 @@ Description=Astrocamera
 WorkingDirectory=/home/gabe/astro-camera
 ExecStart=/usr/bin/pipenv run astro-camera webui -c picam
 # ExecReload=/usr/bin/pipenv run astro-camera webui -c picam
-ExecStop=kill $(pidof pytho3 astro-camera)
+ExecStop=kill $(pidof python astro-camera)
 Type=simple
 Restart=on-failure
 TimeoutStartSec=0
 StartLimitBurst=3
-StartLimitIntervalSec=15
+#StartLimitIntervalSec=15
 User=gabe
 
 [Install]
