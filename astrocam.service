@@ -7,10 +7,10 @@ Description=Astrocamera
 #After=NetworkManager.service
 
 [Service]
-WorkingDirectory=/home/gabe/astro_camera
-ExecStart=/usr/bin/python3 /home/gabe/astro_camera/server.py
-# ExecReload=/usr/bin/python3 /home/gabe/astro_camera/server.py
-ExecStop=kill $(pidof python3 server.py)
+WorkingDirectory=/home/gabe/astro-camera
+ExecStart=/usr/bin/pipenv run astro-camera webui -c picam
+# ExecReload=/usr/bin/pipenv run astro-camera webui -c picam
+ExecStop=kill $(pidof pytho3 astro-camera)
 Type=simple
 Restart=on-failure
 TimeoutStartSec=0
