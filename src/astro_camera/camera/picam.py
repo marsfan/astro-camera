@@ -98,7 +98,7 @@ class PiCamera(CameraBase):
             # Also, we camera does not seem to have a 1/4 scale view so
             # we can't seem to really shrink it down more.
             main={
-                "size": (1920, 1080),
+                "size": (2028, 1520),
                 # Cuts around 15MiB to use instead of XRG8888
                 # Also, HW encoder on older models only supports this format
                 "format": "YUV420",
