@@ -8,6 +8,7 @@ import cv2
 import simplejpeg
 from nicegui import events, run, ui
 from nicegui.events import ClickEventArguments, Handler
+import json
 
 
 # Making this function a LRU cache means that we cache
@@ -133,13 +134,26 @@ class Lightbox:
         """Initialize the lightbox."""
         ui.colors(clear="#00000000")
         with ui.dialog().props("maximized").classes("bg-black") as self.dialog:
-            ui.keyboard(self._handle_key)
+            ui.keyboard(self._handle_key_preview)
             with ui.row(wrap=False, align_items="center"):
                 NavButton("chevron_left", self._previous_image, True)
                 self.large_image = ui.image().props("no-spinner fit=scale-down")
                 with ui.column(align_items="stretch").classes("h-full"):
                     NavButton("close", self.dialog.close, False)
                     NavButton("chevron_right", self._next_image, True)
+
+        with ui.dialog().props("maximized").classes("bg-black") as self.json_dialog:
+            # FIXME: This button is not very pretty. Is there a way to overlay
+            # it on the top-right corner of the json dialog?
+            NavButton("close", self.json_dialog.close, False)
+            # ui.button(icon="close", on_click=self.json_dialog.close).props(
+            #     "absolute-top")
+            self._json_display = ui.json_editor(
+                {
+                    "content": {"json": {}},
+                    "readOnly": True,
+                },
+            )
 
         self.image_list: list[Path] = []
         self.thumb_objs: list[ui.image] = []
@@ -156,7 +170,10 @@ class Lightbox:
             ui.label(text=im_path.stem)
             with ui.row(wrap=False).classes("w-full justify-center"):
                 # FIXME: Implement metadata display
-                ui.button(icon="info").tooltip("Metadata")
+                ui.button(
+                    icon="info",
+                    on_click=lambda: self._open_json_editor(im_path),
+                ).tooltip("Metadata")
                 ui.button(
                     icon="delete",
                     on_click=lambda: DeleteDialog(im_path, card),
@@ -187,8 +204,8 @@ class Lightbox:
                 once=True,
             )
 
-    def _handle_key(self, event_args: events.KeyEventArguments) -> None:
-        """Handle user keypresses.
+    def _handle_key_preview(self, event_args: events.KeyEventArguments) -> None:
+        """Handle user keypresses when in the preview dialog.
 
         Arguments:
             event_args: The arguments from the key press events.
@@ -202,6 +219,30 @@ class Lightbox:
             self._previous_image()
         if event_args.key.arrow_right:
             self._next_image()
+
+    def _handle_key_json(self, event_args: events.KeyEventArguments) -> None:
+        """Handle user keypresses when in the json viewer.
+
+        Arguments:
+            event_args: The arguments from the key press events.
+
+        """
+        if not event_args.action.keydown:
+            return
+        if event_args.key.escape:
+            self.json_dialog.close()
+
+    def _open_json_editor(self, filepath: Path) -> None:
+        """Open the JSON editor with the image metadata.
+
+        Arguments:
+            filepath: Path to the image to load JSON metadata of
+
+        """
+        fp = filepath.with_suffix(".metadata.json")
+        with fp.open(encoding="utf-8") as file:
+            self._json_display.properties["content"]["json"] = json.load(file)
+        self.json_dialog.open()
 
     def _next_image(self) -> None:
         """Navigate to the next image, if there is one."""
