@@ -55,7 +55,7 @@ class CameraProperties(TypedDict):
     """
 
     ScalerCropMaximum: tuple[int, int, int, int]
-    """Area within active area that will be read out by the camera in its current mode.
+    """Area within active area that will be read out by camera in current mode.
 
     In the form (x_offset, y_offset, width, height)
 

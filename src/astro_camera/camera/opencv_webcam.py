@@ -86,9 +86,9 @@ class CameraThread(Thread):
                     shell=False,
                 )
             except FileNotFoundError:
-                # If the system does not have v4l2-ctl, print a warning and move on
-                print("WARNING: running v4l2-ctl did not work. Proceeding without disabling exposure_dynamic_framerate")
-                pass
+                # If the system does not have v4l2-ctl, print a warning
+                # and move on
+                print("WARNING: running v4l2-ctl did not work. Proceeding without disabling exposure_dynamic_framerate")  # noqa: E501
 
         self._running.set()
         while self._running.is_set():
@@ -98,6 +98,8 @@ class CameraThread(Thread):
             rc, full_jpg = cv2.imencode(".jpg", img)
             if not rc:
                 raise RuntimeError("Failed to encode full image.")
+            # FIXME: Need a way to have the width of the preview passed in
+            # here's its 1920
             if img.shape[0] > 1920:
                 height, width, _ = img.shape
                 scaled = cv2.resize(
@@ -323,7 +325,6 @@ class OpenCVWebcam(CameraBase):
         #     ae: Whether or not to enable auto-exposure
 
         """
-        raise ValueError("ABC")
 
     def get_exposure_time(self) -> float:
         """Get the exposure time.

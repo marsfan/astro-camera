@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Page for displaying the images that have been taken."""
+import json
 from base64 import b64encode
 from functools import lru_cache
 from pathlib import Path
@@ -8,7 +9,6 @@ import cv2
 import simplejpeg
 from nicegui import events, run, ui
 from nicegui.events import ClickEventArguments, Handler
-import json
 
 
 # Making this function a LRU cache means that we cache
@@ -133,19 +133,25 @@ class Lightbox:
     def __init__(self) -> None:
         """Initialize the lightbox."""
         ui.colors(clear="#00000000")
+
+        # Dialog box we pop up to show full size image when clicked on
         with ui.dialog().props("maximized").classes("bg-black") as self.dialog:
             ui.keyboard(self._handle_key_preview)
             with ui.row(wrap=False, align_items="center"):
-                NavButton("chevron_left", self._previous_image, True)
-                self.large_image = ui.image().props("no-spinner fit=scale-down")
+                NavButton("chevron_left", self._previous_image, stretch=True)
+                self.large_image = ui.image().props(
+                    "no-spinner fit=scale-down",
+                )
                 with ui.column(align_items="stretch").classes("h-full"):
-                    NavButton("close", self.dialog.close, False)
-                    NavButton("chevron_right", self._next_image, True)
+                    NavButton("close", self.dialog.close, stretch=False)
+                    NavButton("chevron_right", self._next_image, stretch=True)
 
-        with ui.dialog().props("maximized").classes("bg-black") as self.json_dialog:
+        self.json_dialog = ui.dialog().props("maximized").classes("bg-black")
+
+        with self.json_dialog:
             # FIXME: This button is not very pretty. Is there a way to overlay
             # it on the top-right corner of the json dialog?
-            NavButton("close", self.json_dialog.close, False)
+            NavButton("close", self.json_dialog.close, stretch=False)
             # ui.button(icon="close", on_click=self.json_dialog.close).props(
             #     "absolute-top")
             self._json_display = ui.json_editor(
@@ -162,7 +168,10 @@ class Lightbox:
         """Create the thumbnail objects, but don't fill with images yet."""
         self.image_list.append(im_path)
         with ui.card() as card:
-            with ui.button(on_click=lambda: self._open(im_path)).props("flat dense square"):
+            image_button = ui.button(
+                on_click=lambda: self._open(im_path),
+            ).props("flat dense square")
+            with image_button:
                 self.thumb_objs.append(
                     ui.image().classes("w-[350px] h-[200px]"),
                 )
@@ -204,7 +213,10 @@ class Lightbox:
                 once=True,
             )
 
-    def _handle_key_preview(self, event_args: events.KeyEventArguments) -> None:
+    def _handle_key_preview(
+        self,
+        event_args: events.KeyEventArguments,
+    ) -> None:
         """Handle user keypresses when in the preview dialog.
 
         Arguments:

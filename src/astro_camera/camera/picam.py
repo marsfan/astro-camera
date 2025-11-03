@@ -30,8 +30,14 @@ from . import CameraBase
 # https://github.com/Monstrofil/sony-imx-controls/blob/master/imx477/registers.py
 # https://opencv.org/blog/autofocus-using-opencv-a-comparative-study-of-focus-measures-for-sharpness-assessment/
 
+# TODO: Support a settings page so user can set the camera option they want?
 
-def _can_use_as_preview(mode: SensorMode, full_mode: SensorMode, preview_width: int) -> bool:
+
+def _can_use_as_preview(
+    mode: SensorMode,
+    full_mode: SensorMode,
+    preview_width: int,
+) -> bool:
     """Check sensor mode has no cropping, and is at least as wide as preview.
 
     Arguments:
@@ -67,7 +73,10 @@ def _is_native(mode: SensorMode, native_res: tuple[int, int]) -> bool:
     return crop_ok and res_ok
 
 
-def _get_modes(camera: Picamera2) -> tuple[SensorMode, SensorMode]:
+def _get_modes(
+    camera: Picamera2,
+    preview_width: int,
+) -> tuple[SensorMode, SensorMode]:
     """Get resolutions to use for both preview and full capture.
 
     The full capture is found as the highest bit depth capture at the
@@ -78,6 +87,8 @@ def _get_modes(camera: Picamera2) -> tuple[SensorMode, SensorMode]:
 
     Arguments:
         camera: The camera to get the modes from.
+        preview_width: The width of the preview image.
+
 
     Returns:
         Tuple of the camera modes for the full resolution capture,
@@ -97,7 +108,7 @@ def _get_modes(camera: Picamera2) -> tuple[SensorMode, SensorMode]:
 
     # Get formats that are larger than our defined preview size
     over_preview = [
-        m for m in modes if _can_use_as_preview(m, native_mode, 960)
+        m for m in modes if _can_use_as_preview(m, native_mode, preview_width)
     ]
     over_preview.sort(key=lambda m: m["size"][0])
 
@@ -172,7 +183,8 @@ class PiCamera(CameraBase):
         """Initialize the camera hardware."""
         self._picam2 = Picamera2()
 
-        self._full_mode, self._preview_mode = _get_modes(self._picam2)
+        # FIXME: Need the preview width (here 960) to be passed in by client.
+        self._full_mode, self._preview_mode = _get_modes(self._picam2, 960)
 
         self._preview_config = self._picam2.create_video_configuration(
             # FIXME: 2028x1520 leads to nearly 400MiB RAM use on a Pi5.
@@ -486,8 +498,8 @@ class PiCamera(CameraBase):
             Exposure Compensation
 
         """
-        assert isinstance(self._cam_controls["ExposureValue"], float)
-        return self._cam_controls["ExposureValue"]
+        # FIXME: Remove the cast once we have proper type hinting
+        return cast("float", self._cam_controls["ExposureValue"])
 
     def get_auto_exposure(self) -> bool:
         """Get whether or not auto-exposure is enabled.
@@ -496,8 +508,8 @@ class PiCamera(CameraBase):
             Whether or not auto-exposure is enabled
 
         """
-        assert isinstance(self._cam_controls["AeEnable"], bool)
-        return self._cam_controls["AeEnable"]
+        # FIXME: Remove the cast once we have proper type hinting
+        return cast("bool", self._cam_controls["AeEnable"])
 
     def close(self) -> None:
         """Shut down camera."""

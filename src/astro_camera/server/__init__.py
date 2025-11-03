@@ -24,7 +24,7 @@ from .image_browser import Lightbox
 
 # FIXME: Seems that if we leave AE on, we can set just exposure or gain
 # and the other will auto set. Do we want to enable this?
-# FIXME: Support dynamic setting of min/max values for inputs from configuration
+# FIXME: Support dynamic setting of min/max values for inputs from config
 
 # FIXME: Change to use subdir of user directory.
 IMAGE_DIR = Path("images")
@@ -99,11 +99,6 @@ class Server:
         update_gain_exposure_disable,
     )
 
-    def count_up(self) -> None:
-        """Increment the counter, rolling over at 100."""
-        self.counter += 1
-        self.counter %= 100
-
     def __init__(self, camera: CameraBase) -> None:
         """Initialize server."""
         self._camera = camera
@@ -133,10 +128,6 @@ class Server:
         # we have to embed decorated functions inside this one
         # in order to allow access to class members
 
-        nicegui.app.timer(0.1, callback=self.count_up)
-
-        # FIXME: Despite using async/await, this can still lag the webui.
-        # Need to fix
         @nicegui.app.get("/video/frame")
         async def grab_frame() -> fastapi.Response:
             """Grab a single frame from the camera and put it on the UI."""
@@ -161,7 +152,7 @@ class Server:
                 spinner.visible = False
                 spinner.bind_visibility_from(self, "capture_in_progress")
                 spinner.classes(
-                    "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                    "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
                 )
 
             # Timer to constantly update image source
@@ -180,10 +171,13 @@ class Server:
             # TODO: Remove this and replace with a nicer visualization?
             # This is a counter that I'm using as a visual indicator for
             # when the WebUI lags.
-            # nicegui.ui.label().bind_text_from(self, "counter")
-            nicegui.ui.button("Take Photo", on_click=self.take_photo).bind_enabled_from(
+            nicegui.ui.button(
+                "Take Photo",
+                on_click=self.take_photo,
+            ).bind_enabled_from(
                 self,
-                "capture_in_progress", backward=lambda v: not v,
+                "capture_in_progress",
+                backward=lambda v: not v,
             )
 
             nicegui.ui.label("Exposure Control").style(
@@ -229,7 +223,12 @@ class Server:
                     max=8,
                     step=0.1,
                     value=0,
-                ).style("max-width: 180px").bind_value(self, "ev").on_value_change(
+                ).style(
+                    "max-width: 180px",
+                ).bind_value(
+                    self,
+                    "ev",
+                ).on_value_change(
                     lambda v: self._camera.set_ev(v.value),
                 ).bind_enabled_from(
                     self,
@@ -297,12 +296,12 @@ class Server:
         # loopback or leverage some of the async stuff built into the module
         # github.com/raspberrypi/picamera2/issues/714
         self.capture_in_progress = True
-        camera_data, jpg_photo, dng_photo = await self._camera.take_photo_async()
+        cam_data, jpg_photo, dng_photo = await self._camera.take_photo_async()
         await nicegui.run.io_bound(
             self.write_photos,
             jpg_photo,
             dng_photo,
-            camera_data,
+            cam_data,
         )
         self.capture_in_progress = False
 
