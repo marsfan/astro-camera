@@ -187,8 +187,12 @@ class PiCamera(CameraBase):
         self._full_mode, self._preview_mode = _get_modes(self._picam2, 960)
 
         self._preview_config = self._picam2.create_video_configuration(
-            # FIXME: 2028x1520 leads to nearly 400MiB RAM use on a Pi5.
-            # Need to check if its better on Pi3 since it has hw encoder
+            # NOTE: With the Pi HQ camera, this will give us 2028x1520
+            # On the Pi 5, memray shows the program using over 400MiB of
+            # memory with this. But from testing with a Pi 3, the memory
+            # usage on that is closer to 120MiB. Guessing because all non
+            # Pi 5 models have a HW encoder, so its not needing to buffer
+            # data in memory when encoding?
             main={
                 "size": self._preview_mode["size"],
                 # Cuts around 15MiB to use instead of XRG8888
