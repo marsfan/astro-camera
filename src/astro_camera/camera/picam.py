@@ -7,14 +7,15 @@ from collections.abc import Buffer
 from copy import deepcopy
 from io import BufferedIOBase, BytesIO
 from threading import Condition
-from typing import Any
+from typing import Any, cast
 
-# type: ignore[attr-defined]
 from picamera2.encoders import MJPEGEncoder, Quality
 from picamera2.job import Job
 from picamera2.outputs.fileoutput import FileOutput
 from picamera2.picamera2 import Picamera2
 from picamera2.request import CompletedRequest
+
+from astro_camera.datatypes import SensorMode
 
 from . import CameraBase
 
@@ -30,9 +31,84 @@ from . import CameraBase
 # https://opencv.org/blog/autofocus-using-opencv-a-comparative-study-of-focus-measures-for-sharpness-assessment/
 
 
+def _can_use_as_preview(mode: SensorMode, full_mode: SensorMode, preview_width: int) -> bool:
+    """Check sensor mode has no cropping, and is at least as wide as preview.
+
+    Arguments:
+        mode: The sensor mode to check
+        full_mode: The full mode to compare cropping against.
+        preview_width: The width of the preview image.
+
+    Returns:
+        Whether or not the sensor mode has no cropping, and is at least
+        as wide as the preview.
+
+    """
+    is_full_crop = mode["crop_limits"] == full_mode["crop_limits"]
+    width_ok = mode["size"][0] >= preview_width
+
+    return is_full_crop and width_ok
+
+
+def _is_native(mode: SensorMode, native_res: tuple[int, int]) -> bool:
+    """Check if the given sensor mode is in the native resolution.
+
+    Arguments:
+        mode: The sensor mode to check
+        native_res: The native resolution of the sensor
+
+    Returns:
+        Whether or not the given sensor mode is in native resolution.
+
+    """
+    # A full image has no crop, so it goes from (0,0) to (width,height)
+    crop_ok = mode["crop_limits"] == (0, 0, *native_res)
+    res_ok = mode["size"] == native_res
+    return crop_ok and res_ok
+
+
+def _get_modes(camera: Picamera2) -> tuple[SensorMode, SensorMode]:
+    """Get resolutions to use for both preview and full capture.
+
+    The full capture is found as the highest bit depth capture at the
+    sensor's native resolution, with no cropping.
+
+    The preview is then found as the lowest resolution above the
+    target preview resolution, and with no cropping.
+
+    Arguments:
+        camera: The camera to get the modes from.
+
+    Returns:
+        Tuple of the camera modes for the full resolution capture,
+        and the preview resolution
+
+    """
+    modes = cast("list[SensorMode]", camera.sensor_modes)
+
+    # Find all with full resolution, no crop, and then sort by bit depth.
+    full_crop_modes = sorted(
+        (m for m in modes if _is_native(m, camera.sensor_resolution)),
+        key=lambda a: a["bit_depth"],
+    )
+
+    # Last entry will have the highest bit depth
+    native_mode = full_crop_modes[-1]
+
+    # Get formats that are larger than our defined preview size
+    over_preview = [
+        m for m in modes if _can_use_as_preview(m, native_mode, 960)
+    ]
+    over_preview.sort(key=lambda m: m["size"][0])
+
+    preview_mode = over_preview[0]
+    return native_mode, preview_mode
+
 # TODO: Do we want to have the encoding happen in the callback?
 # RPi says it might be ok to do that:
 # https://github.com/raspberrypi/picamera2/discussions/1332#discussioncomment-14684027
+
+
 def _photo_signal(
     _job: Job[Any],
     loop: asyncio.AbstractEventLoop,
@@ -87,18 +163,22 @@ class PiCamera(CameraBase):
         self._preview_config: dict[str, Any] = {}
         self._picam2: Picamera2 | None = None
 
+        self._preview_mode: SensorMode | None = None
+        self._full_mode: SensorMode | None = None
+
         self._output = StreamingOutput()
 
     def initialize_hw(self) -> None:
         """Initialize the camera hardware."""
         self._picam2 = Picamera2()
+
+        self._full_mode, self._preview_mode = _get_modes(self._picam2)
+
         self._preview_config = self._picam2.create_video_configuration(
             # FIXME: 2028x1520 leads to nearly 400MiB RAM use on a Pi5.
             # Need to check if its better on Pi3 since it has hw encoder
-            # Also, we camera does not seem to have a 1/4 scale view so
-            # we can't seem to really shrink it down more.
             main={
-                "size": (2028, 1520),
+                "size": self._preview_mode["size"],
                 # Cuts around 15MiB to use instead of XRG8888
                 # Also, HW encoder on older models only supports this format
                 "format": "YUV420",
@@ -138,17 +218,14 @@ class PiCamera(CameraBase):
         configuration for the capture.
 
         """
-        if not self._picam2:
+        if not self._picam2 or not self._full_mode:
             raise ValueError("Camera is not initialized.")
         # Create config for high res photo
         capture_config = self._picam2.create_still_configuration(
-            # FIXME: Support other configurations. This is hardcoded values for HQ Camera
-            # You can use rpicam-hello --list-cameras to list supported modes
-            # FIXME: Need to support correct uncompressed format for each camera
-            # SBGGR16 is uncompressed for HQ camera on Pi5
-            # See https://github.com/raspberrypi/picamera2/discussions/1335
-            # for more info
-            raw={"format": "SBGGR16", "size": (4056, 3040)},
+            raw={
+                "format": self._full_mode["unpacked"],
+                "size": self._full_mode["size"],
+            },
             display=None,
             controls=self._cam_controls,
         )

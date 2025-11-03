@@ -274,37 +274,42 @@ class CameraControls(TypedDict):
 
 
 class SensorMode(TypedDict):
-    """Picamera2 sensor mode information."""
+    """Information about a sensor mode for a PiCamera."""
 
-    bit_depth: int
-    """Number of bits per pixel"""
+    format: str
+    """The sensor format.
 
-    crop_limits: tuple[int, int, int, int]
-    """Actual field of view for the mode."""
+    This can be passed directly to :py:attr:`StreamConfig.format`
+    when configuring a camera.
 
-    # NOTE: On HQ camera, attaching to the 1.8v XVS pin can allow for
-    # even longer exposures.
-    # See https://forums.raspberrypi.com/viewtopic.php?t=347476
-    exposure_limits: tuple[int, int]
-    """Minimum and maximum allowed exposure time in microseconds."""
-
-    format: str  # TODO: Proper reference to sstreamconfig in docstring
-    """Packed sensor format. Can be passed to raw stream format field."""
-
-    fps: float
-    """Maximum supported framerate for the mode"""
-
-    # TODO: Proper reference to sstreamconfig in docstring
-    size: tuple[int, int]
-    """Sensor output resolution.
-
-    Can be passed to the 'size' parameter for a stream.
     """
 
     unpacked: str
-    """Unpacked Raw format for the mode.
+    """The unpacked sensor format."""
 
-    Use in place of 'format' of unpacked raws are required.
+    bit_depth: int
+    """The number of bits in each sample."""
+
+    size: tuple[int, int]
+    """The image size in pixels.
+
+        This can be passed directly to :py:attr:`StreamConfig.size` when
+    configuring a camera.
+
+    """
+
+    fps: float
+    """Maximum frame rate for this mode."""
+
+    crop_limits: tuple[int, int, int, int]
+    """Exact field of view of this mode within the full sensor output."""
+
+    exposure_limits: tuple[int, int, int]
+    """Min, Max, and default exposure time (in microseconds) for this mode.
+
+    Note:
+        On the HQ camera, the 1.8v XVS pin can be used for even longer
+        exposures.
 
     """
 
