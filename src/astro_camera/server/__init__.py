@@ -17,6 +17,9 @@ from typing import Any
 
 import fastapi
 import nicegui
+import starlette
+import starlette.middleware
+import starlette.middleware.gzip
 
 from astro_camera.camera import CameraBase
 
@@ -397,6 +400,21 @@ def setup_debug() -> None:
     warnings.filterwarnings("always", category=RuntimeWarning)
 
 
+def remove_gzip_middleware() -> None:
+    """Disable GZIP compression for network traffic.
+
+    This is done due to the fact that it adds a decent bit of overhead
+    when running the program on a Raspberry Pi 3.
+
+    See https://github.com/zauberzeug/nicegui/discussions/2967
+
+    """
+    nicegui.app.user_middleware = [
+        m for m in nicegui.app.user_middleware if m.cls != starlette.middleware.gzip.GZipMiddleware  # noqa: E501
+    ]
+    nicegui.app.middleware_stack = nicegui.app.build_middleware_stack()
+
+
 def server_main(camera: CameraBase, *, debug: bool = False) -> None:
     """Run the webui server.
 
@@ -411,6 +429,7 @@ def server_main(camera: CameraBase, *, debug: bool = False) -> None:
 
     """
     nicegui.app.on_startup(camera.initialize_hw)
+    nicegui.app.on_startup(remove_gzip_middleware)
     if debug:
         nicegui.app.on_startup(setup_debug)
     Server(camera)
