@@ -170,6 +170,7 @@ class PiCamera(CameraBase):
         self._cam_controls: dict[str, Any] = {
             "AeEnable": True,
             "ExposureValue": 0.0,
+            "FrameRate": 30.0,
         }
         self._preview_config: dict[str, Any] = {}
         self._picam2: Picamera2 | None = None
@@ -203,7 +204,7 @@ class PiCamera(CameraBase):
         )
         self._picam2.configure(self._preview_config)
         self._picam2.start_recording(
-            MJPEGEncoder(),
+            MJPEGEncoder(self._cam_controls["FrameRate"]),
             FileOutput(self._output),
             quality=Quality.VERY_HIGH,
         )
