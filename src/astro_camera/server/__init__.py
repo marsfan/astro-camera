@@ -90,6 +90,8 @@ def image_browser() -> None:
 
     lightbox.populate()
 
+# FIXME: Support configuring FPS of camera driver
+
 
 class Server:
     """Main web interface for camera control."""
@@ -165,7 +167,7 @@ class Server:
             # then update a variable all clients read from. That might fix
             # occasional crashes
             nicegui.ui.timer(
-                interval=0.1,
+                interval=1/30,
                 callback=lambda: self.update_image(video_image),
             )
 
