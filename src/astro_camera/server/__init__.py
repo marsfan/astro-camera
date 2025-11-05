@@ -189,20 +189,24 @@ class Server:
                 "font-size: 20px; font-weight: bold",
             )
 
-            ae_switch = nicegui.ui.switch("Auto Exposure")
-            ae_switch.bind_value(self, "ae_enable")
-            ae_switch.on_value_change(
-                lambda v: self._camera.set_auto_exposure(v.value),
-            )
-            ae_switch.bind_enabled_from(
+            nicegui.ui.switch(
+                "Auto Exposure",
+                on_change=lambda v: self._camera.set_auto_exposure(v.value),
+            ).bind_value(
+                self,
+                "ae_enable",
+            ).bind_enabled_from(
                 self,
                 "capture_in_progress", backward=lambda v: not v,
             )
 
             with nicegui.ui.row():
-                exposure_entry = nicegui.ui.number(label="Exposure")
-                exposure_entry.bind_value(self, "exposure")
-                exposure_entry.bind_enabled_from(
+                nicegui.ui.number(
+                    label="Exposure",
+                ).bind_value(
+                    self,
+                    "exposure",
+                ).bind_enabled_from(
                     self,
                     "exposure_gain_state",
                 )
@@ -213,9 +217,15 @@ class Server:
                     backward=lambda v: f"Current Exposure Time: {v:0.1f}",
                 )
             with nicegui.ui.row():
-                gain_entry = nicegui.ui.number(label="Gain")
-                gain_entry.bind_value(self, "gain")
-                gain_entry.bind_enabled_from(self, "exposure_gain_state")
+                nicegui.ui.number(
+                    label="Gain",
+                ).bind_value(
+                    self,
+                    "gain",
+                ).bind_enabled_from(
+                    self,
+                    "exposure_gain_state",
+                )
                 nicegui.ui.label().bind_text_from(
                     self,
                     "current_gain",
@@ -228,13 +238,12 @@ class Server:
                     max=8,
                     step=0.1,
                     value=0,
+                    on_change=lambda v: self._camera.set_ev(v.value),
                 ).style(
                     "max-width: 180px",
                 ).bind_value(
                     self,
                     "ev",
-                ).on_value_change(
-                    lambda v: self._camera.set_ev(v.value),
                 ).bind_enabled_from(
                     self,
                     "capture_in_progress",
