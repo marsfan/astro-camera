@@ -173,9 +173,6 @@ class Server:
 
             # Defining the main UI.
 
-            # TODO: Remove this and replace with a nicer visualization?
-            # This is a counter that I'm using as a visual indicator for
-            # when the WebUI lags.
             nicegui.ui.button(
                 "Take Photo",
                 on_click=self.take_photo,
