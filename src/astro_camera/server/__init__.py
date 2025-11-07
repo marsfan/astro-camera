@@ -163,12 +163,17 @@ class Server:
             # Timer to constantly update image source
             # We are appending current timestamp to the source to force browser
             # caching to update
-            # FIXME: Need to have this outside of a specific page, and we
-            # then update a variable all clients read from. That might fix
-            # occasional crashes
             nicegui.ui.timer(
                 interval=1/30,
                 callback=lambda: self.update_image(video_image),
+            )
+            # Timer to periodically update metadata.
+            # This needs to be handled separately of the image update, as
+            # the process to get metadata takes longer than it does to
+            # pull images from the encoder
+            nicegui.ui.timer(
+                interval=0.1,
+                callback=self.update_metadata,
             )
 
             # Defining the main UI.
@@ -383,6 +388,15 @@ class Server:
 
         """
         video_image.set_source(f"/video/frame?{time.time()}")
+
+    async def update_metadata(self) -> None:
+        """Update the display of the metadata in the UI.
+
+        This is placed separately as it takes longer to read metadata
+        than it does not get the frames from the encoder. If this was
+        in :py:meth:`update_image`, then we'd only get around 15 FPS
+
+        """
         metadata = await self._camera.get_metadata_async()
         self.current_exposure = metadata["ExposureTime"]
         self.current_gain = metadata["AnalogueGain"]
