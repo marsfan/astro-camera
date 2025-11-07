@@ -225,7 +225,7 @@ class PiCamera(CameraBase):
         with self._output.condition:
             self._output.condition.wait()
             if self._output.frame is None:
-                raise ValueError("Frame was None")
+                return b""
             return self._output.frame
 
     def _prepare_to_take(self) -> dict[str, Any]:
