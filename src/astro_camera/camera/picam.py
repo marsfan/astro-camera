@@ -6,7 +6,7 @@ import asyncio
 from collections.abc import Buffer
 from copy import deepcopy
 from io import BufferedIOBase, BytesIO
-from threading import Condition
+from threading import Lock
 from typing import Any, cast
 
 from picamera2.encoders import MJPEGEncoder, Quality
@@ -142,7 +142,7 @@ class StreamingOutput(BufferedIOBase):
     def __init__(self) -> None:
         """Initialize the writer."""
         self.frame: bytes | None = None
-        self.condition = Condition()
+        self.condition = Lock()
 
     def write(self, buf: Buffer) -> int:
         """Write the bytes to the frame.
@@ -156,7 +156,6 @@ class StreamingOutput(BufferedIOBase):
         """
         with self.condition:
             self.frame = BytesIO(buf).read()
-            self.condition.notify_all()
             return len(self.frame)
 
 
@@ -223,7 +222,6 @@ class PiCamera(CameraBase):
         # https://github.com/raspberrypi/picamera2/issues/752
         # FIXME: Might need to figure out how to make this async as well
         with self._output.condition:
-            self._output.condition.wait()
             if self._output.frame is None:
                 return b""
             return self._output.frame

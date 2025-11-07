@@ -140,7 +140,7 @@ class Server:
             # thread to avoid blocking event loop
             # TODO: get_frame is also cpubound for some drivers, so maybe we
             # want to use cpu_bound instead?
-            frame = await nicegui.run.io_bound(self._camera.get_frame)
+            frame = self._camera.get_frame()
             return fastapi.Response(content=frame, media_type="image/jpeg")
 
         @nicegui.ui.page("/", title="Astro Camera Control")
