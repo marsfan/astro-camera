@@ -159,7 +159,6 @@
                 "sha256:faccab372e66bc76d5731525e7f1143c922271725b9d38c9f97edcc66266b451",
                 "sha256:fc0cacab7ba4e56f0f81c82a98c09bed2f39c940107b03a34b168bdf7597edd3"
             ],
-            "index": "pypi",
             "markers": "python_version >= '3.10'",
             "version": "==3.14.1"
         },
@@ -1324,11 +1323,11 @@
         },
         "python-engineio": {
             "hashes": [
-                "sha256:0a853fcef52f5b345425d8c2b921ac85023a04dfcf75d7b74696c61e940fd066",
-                "sha256:f32ad10589859c11053ad7d9bb3c9695cdf862113bfb0d20bc4d890198287399"
+                "sha256:1f60ecaf1358190f0e26c48c578a60428dc02a8f1295bc3dbf53d1b31116821f",
+                "sha256:572b7783e341fed21edbc7cea297ccd378dad79265fdde96aa4664420a7c06c9"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==4.13.1"
+            "version": "==4.13.3"
         },
         "python-multipart": {
             "hashes": [
@@ -1344,11 +1343,11 @@
                 "asyncio-client"
             ],
             "hashes": [
-                "sha256:a3eb1702e92aa2f2b5d3ba00261b61f062cce51f1cfb6900bf3ab4d1934d2d35",
-                "sha256:f863f98eacce81ceea2e742f6388e10ca3cdd0764be21d30d5196470edf5ea89"
+                "sha256:ad88c228d921646efa436c0a0df217e364ef30ec072df4041484e54d49c15989",
+                "sha256:bef2da3374fd533aed4297f57b4f6512b52aa51604cb0da2165f401291c5ca20"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==5.16.1"
+            "version": "==5.16.2"
         },
         "pyyaml": {
             "hashes": [
