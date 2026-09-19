@@ -6,7 +6,7 @@ import asyncio
 from collections.abc import Buffer
 from copy import deepcopy
 from io import BufferedIOBase, BytesIO
-from threading import Lock
+from threading import Event, Lock
 from typing import Any, cast
 
 from picamera2.encoders import MJPEGEncoder, Quality
@@ -115,6 +115,7 @@ def _get_modes(
     preview_mode = over_preview[0]
     return native_mode, preview_mode
 
+
 # TODO: Do we want to have the encoding happen in the callback?
 # RPi says it might be ok to do that:
 # https://github.com/raspberrypi/picamera2/discussions/1332#discussioncomment-14684027
@@ -201,12 +202,27 @@ class PiCamera(CameraBase):
             },
             controls=self._cam_controls,
         )
+
+        # Set a callback to be run when frame is produced, so we know we are producing frames
+        frame_received = Event()
+        self._picam2.post_callback = lambda _: frame_received.set()
+
         self._picam2.configure(self._preview_config)
         self._picam2.start_recording(
             MJPEGEncoder(self._cam_controls["FrameRate"]),
             FileOutput(self._output),
             quality=Quality.VERY_HIGH,
         )
+
+        # Wait a couple of seconds for a frame to be produced.
+        # If none is produced, there might not be a connected camera.
+        # Note: I got this idea from ChatGPT.
+        if not frame_received.wait(timeout=2.0):
+            self.close()
+            raise RuntimeError(
+                "PiCamera2 did not produce any frames. Are you sure a camera is connected?"
+            )
+        self._picam2.post_callback = None
 
     def get_frame(self) -> bytes:
         """Get a single frame for real-time streaming.

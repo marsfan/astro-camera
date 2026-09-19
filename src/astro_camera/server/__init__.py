@@ -72,7 +72,8 @@ def update_gain_exposure_disable(owner: "Server", _value: bool) -> None:
 
     """
     owner.exposure_gain_state = not (
-        owner.capture_in_progress or owner.ae_enable)
+        owner.capture_in_progress or owner.ae_enable
+    )
 
 
 # This page does not use any logic in the server class, so we can define
@@ -89,6 +90,7 @@ def image_browser() -> None:
             lightbox.add_image(image)
 
     lightbox.populate()
+
 
 # FIXME: Support configuring FPS of camera driver
 
@@ -164,7 +166,7 @@ class Server:
             # We are appending current timestamp to the source to force browser
             # caching to update
             nicegui.ui.timer(
-                interval=1/30,
+                interval=1 / 30,
                 callback=lambda: self.update_image(video_image),
             )
             # Timer to periodically update metadata.
@@ -199,7 +201,8 @@ class Server:
                 "ae_enable",
             ).bind_enabled_from(
                 self,
-                "capture_in_progress", backward=lambda v: not v,
+                "capture_in_progress",
+                backward=lambda v: not v,
             )
 
             with nicegui.ui.row():
@@ -232,7 +235,6 @@ class Server:
                     self,
                     "current_gain",
                     backward=lambda v: f"Current Gain: {v:.1f}",
-
                 )
             with nicegui.ui.row().classes("w-full no-wrap"):
                 nicegui.ui.slider(
@@ -338,7 +340,9 @@ class Server:
             metadata: Dictionary of the metadata to save to a JSON.
 
         """
-        filename = f"IMG_{datetime.isoformat(datetime.now(UTC))}".replace(":", "_")  # noqa: E501
+        filename = f"IMG_{datetime.isoformat(datetime.now(UTC))}".replace(
+            ":", "_"
+        )  # noqa: E501
 
         (IMAGE_DIR / f"{filename}.jpg").write_bytes(jpg_bytes)
         (IMAGE_DIR / f"{filename}.dng").write_bytes(dng_bytes)
@@ -432,7 +436,9 @@ def remove_gzip_middleware() -> None:
 
     """
     nicegui.app.user_middleware = [
-        m for m in nicegui.app.user_middleware if m.cls != starlette.middleware.gzip.GZipMiddleware  # noqa: E501
+        m
+        for m in nicegui.app.user_middleware
+        if m.cls != starlette.middleware.gzip.GZipMiddleware  # noqa: E501
     ]
     nicegui.app.middleware_stack = nicegui.app.build_middleware_stack()
 
@@ -450,7 +456,7 @@ def server_main(camera: CameraBase, *, debug: bool = False) -> None:
             files are modified, and auto-open the webpage on launch.
 
     """
-    nicegui.app.on_startup(camera.initialize_hw)
+    camera.initialize_hw()
     nicegui.app.on_startup(remove_gzip_middleware)
     if debug:
         nicegui.app.on_startup(setup_debug)
