@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """Command line interface for the program."""
+
 from argparse import ArgumentParser
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 
 try:
     import picamera2  # noqa: F401
+
     picamera_import_failed = False
 except ImportError:
     # If the picamera2 module fails to load, we are probably running
@@ -32,9 +34,9 @@ else:
 
 
 def main(
-        args_in: Sequence[str] | None = None,
-        *,
-        webui_debug: bool = False,
+    args_in: Sequence[str] | None = None,
+    *,
+    webui_debug: bool = False,
 ) -> None:
     """Run when called from command line.
 

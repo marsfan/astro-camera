@@ -167,11 +167,7 @@ class PiCamera(CameraBase):
         """Initialize Camera."""
         # FIXME: Support initialization args for controls.
         # and preview config (namely size)
-        self._cam_controls: dict[str, Any] = {
-            "AeEnable": True,
-            "ExposureValue": 0.0,
-            "FrameRate": 30.0,
-        }
+        self._cam_controls: dict[str, Any] = {}
         self._preview_config: dict[str, Any] = {}
         self._picam2: Picamera2 | None = None
 
@@ -179,6 +175,8 @@ class PiCamera(CameraBase):
         self._full_mode: SensorMode | None = None
 
         self._output = StreamingOutput()
+
+        self._mjpeg_encoder = MJPEGEncoder()
 
     def initialize_hw(self) -> None:
         """Initialize the camera hardware."""
@@ -200,7 +198,6 @@ class PiCamera(CameraBase):
                 # Also, HW encoder on older models only supports this format
                 "format": "YUV420",
             },
-            controls=self._cam_controls,
         )
 
         # Set a callback to be run when frame is produced, so we know we are producing frames
@@ -209,7 +206,7 @@ class PiCamera(CameraBase):
 
         self._picam2.configure(self._preview_config)
         self._picam2.start_recording(
-            MJPEGEncoder(self._cam_controls["FrameRate"]),
+            self._mjpeg_encoder,
             FileOutput(self._output),
             quality=Quality.VERY_HIGH,
         )
@@ -304,7 +301,11 @@ class PiCamera(CameraBase):
 
         # Restart the encoder
         # FIXME: Logic to check if its already started?
-        self._picam2.start_encoder(MJPEGEncoder(), FileOutput(self._output))
+        self._picam2.start_encoder(
+            self._mjpeg_encoder,
+            FileOutput(self._output),
+            quality=Quality.VERY_HIGH,
+        )
 
         # Release the request
         request.release()
@@ -367,7 +368,6 @@ class PiCamera(CameraBase):
             capture_config,
             signal_function=lambda j: _photo_signal(j, loop, photo_done),
         )
-
         # Wait for the capture to complete, releasing the async loop
         await photo_done
 
@@ -422,7 +422,7 @@ class PiCamera(CameraBase):
         """
         if not self._picam2:
             raise ValueError("Camera is not initialized.")
-        self._cam_controls = controls
+        self._cam_controls.update(controls)
 
         # We need to change controls to allow for frame to take
         # longer than default. If we don't change this, controls will
@@ -431,7 +431,7 @@ class PiCamera(CameraBase):
         if "ExposureTime" in self._cam_controls:
             self._cam_controls["FrameDurationLimits"] = (
                 0,
-                controls["ExposureTime"] + 1000,
+                self._cam_controls["ExposureTime"] + 1000,
             )
         else:
             self._cam_controls["FrameDurationLimits"] = (
@@ -444,16 +444,17 @@ class PiCamera(CameraBase):
         # FIXME: Need a way to indicate this on the UI.
         # UI probably needs a "current values" readout.
         preview_controls = deepcopy(controls)
-        if "ExposureTime" in controls:
+        if "ExposureTime" in preview_controls:
             preview_controls["ExposureTime"] = min(
-                controls["ExposureTime"],
+                preview_controls["ExposureTime"],
                 200000,
             )
             preview_controls["FrameDurationLimits"] = (
                 0,
-                controls["ExposureTime"] + 1000,
+                preview_controls["ExposureTime"] + 1000,
             )
 
+        self._preview_config["controls"].update(preview_controls)
         self._picam2.set_controls(preview_controls)
 
     def set_exposure_time(self, time: float) -> None:
